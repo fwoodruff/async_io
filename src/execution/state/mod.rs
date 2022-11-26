@@ -48,9 +48,11 @@ impl State {
     pub fn push(&self, task: SharedTask) {
         self.cx.push(task);
     }
+    
     pub fn pop(&self) -> Option<SharedTask> {
         self.cx.pop()
     }
+
     pub fn poll(&self) -> Option<Vec<Arc<Task>>> {
         self.pl.poll()
     }

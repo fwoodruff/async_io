@@ -18,14 +18,17 @@ impl PendingTasks {
             to_poll : Mutex::new(VecDeque::new()),
         }
     }
+
     pub fn empty(&self) -> bool {
         let guard = self.to_poll.lock().unwrap();
         guard.is_empty()
     }
+
     pub fn pop(&self) -> Option<SharedTask> {
         let mut guard = self.to_poll.lock().unwrap();
         guard.pop_front()
     }
+    
     pub fn push(&self, task : SharedTask) {
         let mut guard = self.to_poll.lock().unwrap();
         guard.push_back(task);

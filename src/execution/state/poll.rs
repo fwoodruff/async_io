@@ -15,7 +15,6 @@ use super::{
 };
 use mio::Interest;
 
-
 pub struct SharedPoller {
     read_socket : Mutex<RefCell<mio::net::UnixStream>>,
     write_socket : Mutex<mio::net::UnixStream>,

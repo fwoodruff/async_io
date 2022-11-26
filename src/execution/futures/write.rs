@@ -6,8 +6,8 @@ pub struct WriteFuture<'a> {
     buff : &'a [u8],
     stream : &'a RefCell<TcpStream>,
     registered : bool,
-
 }
+
 unsafe impl Send for WriteFuture<'_> {} // future has a single owner when dropped or polled
 
 impl<'a> WriteFuture<'a> {

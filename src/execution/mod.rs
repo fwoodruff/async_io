@@ -19,10 +19,8 @@ use std::{
 use mio::net::TcpStream;
 
 pub fn async_spawn(f: impl Future<Output = ()> + Send + 'static) -> join::JoinFuture {
-    
     let current_task = current_task();
     let locking_cx: &State;
-
     let shared_new_task : Arc<Task>;
     {
         let mut task_books = current_task.as_ref().b.lock().unwrap();

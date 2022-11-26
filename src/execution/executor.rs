@@ -82,13 +82,14 @@ impl Executor {
             thd.join().expect("failed to join thread");
         }
     }
-
 }
 
 struct NoopWaker;
+
 impl NoopWaker {
     fn new() -> Self { Self {} }
 }
+
 impl Wake for NoopWaker {
     fn wake(self: Arc<Self>) { }
 }
