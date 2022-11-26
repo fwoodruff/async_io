@@ -18,7 +18,7 @@ async fn client(stream : Stream) {
         }
     }
 
-    // Taken from Rosetta code
+    // https://rosettacode.org/wiki/Hello_world/Web_server#Rust
     let response =
         "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n
         <!DOCTYPE html><html><head><title>Bye-bye baby bye-bye</title>
