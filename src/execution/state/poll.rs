@@ -79,8 +79,11 @@ impl SharedPoller {
         }
         let mut poll = self.locked_poller.lock().unwrap();
         let mut events = mio::Events::with_capacity(1024);
-        poll.poll(&mut events, None).unwrap();
+        let pollres = poll.poll(&mut events, None);
         let mut res = vec!();
+        if let Err(_) = pollres {
+            return Some(res);
+        }
         for event in events.into_iter() {
             let tt = event.token();
             if tt.0 == PIPE_TOKEN {
