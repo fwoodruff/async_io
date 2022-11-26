@@ -6,11 +6,11 @@ use std::task::Context;
 use crate::execution::state::execute::current_state;
 use crate::execution::current_task;
 
-
 pub struct AcceptFuture<'a> {
     listener : &'a mut TcpListener,
     registered : bool,
 }
+
 impl<'a> AcceptFuture<'a> {
     pub fn new(listener : &'a mut TcpListener) -> Self {
         Self {

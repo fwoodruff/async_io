@@ -14,6 +14,7 @@ use std::{
 pub struct JoinFuture {
     child : usize //*const Task,
 }
+
 impl JoinFuture {
     pub fn new(child : *const Task) -> Self {
         Self {

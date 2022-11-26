@@ -2,7 +2,6 @@
 use super::super::*;
 use crate::execution::state::execute::current_state;
 
-
 pub struct WriteFuture<'a> {
     buff : &'a [u8],
     stream : &'a RefCell<TcpStream>,
@@ -31,7 +30,6 @@ impl Future for WriteFuture<'_> {
             let res = std::io::Write::write(&mut stream_ref, self.buff);
             let state_ptr = current_state();
             let state = unsafe { &mut *state_ptr };
-            
             match res {
                 Ok(_) => {
                     if self.registered {

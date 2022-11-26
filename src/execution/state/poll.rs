@@ -49,9 +49,6 @@ impl SharedPoller {
         while self.write_socket.lock().unwrap().write(&buff[..]).unwrap() != 1 {
             eprintln!("reloop");
         }
-            
-            
-        
         let res = self.locked_poller.lock().unwrap();
         let mut rr = self.read_socket.lock().unwrap();
         let bb = rr.get_mut();
@@ -67,10 +64,12 @@ impl SharedPoller {
         self.token_map.lock().unwrap().insert(token, task);
         let _res = poller.registry().register(source, token, interests);
     }
+
     pub fn deregister(&self, source : &mut impl mio::event::Source) {
         let poller = self.force_lock();
         let _res = poller.registry().deregister(source);
     }
+
     pub fn poll(&self) -> Option<Vec<SharedTask>> {
         let access = self.single_access.try_lock();
         if let Err(_error) = access {
@@ -93,13 +92,13 @@ impl SharedPoller {
         }
         Some(res)
     }
+
     pub fn notify(&self) {
         let _ = self.force_lock();
     }
+
     pub fn is_empty(&self) -> bool {
         let tokens = self.token_map.lock().unwrap();
         tokens.is_empty()
     }
-    
-
 }

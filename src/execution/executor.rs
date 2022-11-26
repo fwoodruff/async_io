@@ -1,9 +1,15 @@
 
 use super::{ State, Task, CURRENT, NUMTHREADS};
-use std::task::{ Waker, Context, Wake};
-use std::sync::Arc;
-use std::future::Future;
-use std::pin::Pin;
+use std::{
+    task::{ 
+        Waker, 
+        Context, 
+        Wake
+    },
+    sync::Arc,
+    future::Future,
+    pin::Pin
+};
 
 pub struct Executor {
     execution_context: State,
@@ -42,7 +48,6 @@ impl Executor {
             std::thread::sleep(std::time::Duration::from_millis(11));
             if self.execution_context.is_empty() { return; }
             let task = self.execution_context.pop();
-            
             match task {
                 Some(some_task) => {
                     self.poll_task(some_task);

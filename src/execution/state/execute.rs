@@ -1,6 +1,12 @@
-use std::collections::VecDeque;
-use std::sync::Mutex;
-use super::{SharedTask, State, super::task::*};
+use std::{
+    collections::VecDeque,
+    sync::Mutex
+};
+use super::{
+    SharedTask, 
+    State, 
+    super::task::*
+};
 
 pub struct PendingTasks {
     pub(super) to_poll : Mutex<VecDeque<SharedTask>>,

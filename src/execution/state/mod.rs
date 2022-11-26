@@ -2,11 +2,14 @@ pub mod poll;
 pub mod execute;
 
 use super:: {
-    state::{execute::PendingTasks, poll::SharedPoller},
-    SharedTask,  Task,
+    state::{
+        execute::PendingTasks, 
+        poll::SharedPoller
+    },
+    SharedTask,
+    Task,
 };
 use std::sync::Arc;
-
 
 pub struct State {
     cx : PendingTasks,

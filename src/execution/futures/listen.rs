@@ -1,16 +1,12 @@
 
-
 use super::{*, write::WriteFuture};
 use self::read::*;
 use mio::net::TcpStream;
 use std::cell::RefCell;
-
 use crate::execution::accept::AcceptFuture;
-
 
 pub struct Listener {
     listener : mio::net::TcpListener,
-    
 }
 
 impl<'a> Listener {
@@ -24,13 +20,11 @@ impl<'a> Listener {
     }
 }
 
-
 pub struct Stream {
     stream : RefCell<TcpStream>,
 }
 
-//unsafe impl Send for Stream {}
-unsafe impl Sync for Stream {}
+unsafe impl Sync for Stream {} // future should never be polled by more than one thread
 
 impl<'a> Stream {
     pub fn new(stream : TcpStream) -> Self {
@@ -38,9 +32,11 @@ impl<'a> Stream {
             stream : RefCell::new(stream),
         }
     }
+
     pub fn read(&'a self, buff : &'a mut [u8] ) -> ReadFuture<'a> {
         ReadFuture::new(buff, &self.stream)
     }
+
     pub fn write(&'a self, buff : &'a [u8]) -> WriteFuture<'a> {
         WriteFuture::new(buff, &self.stream)
     }

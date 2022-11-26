@@ -23,7 +23,6 @@ impl<'a> ReadFuture<'a> {
 impl Future for ReadFuture<'_> {
     type Output = Result<usize, std::io::Error>;
     fn poll(mut self: Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
-        
         loop {
             let mut stream_borrow = self.stream.borrow_mut();
             let stream_ref = stream_borrow.by_ref();
@@ -63,6 +62,4 @@ impl Future for ReadFuture<'_> {
             }
         }
     }
-
-    
 }

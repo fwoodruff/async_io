@@ -18,7 +18,6 @@ pub struct TaskBookkeeping {
     pub producer : usize, // Cast as *const State, memory safe because pinned
 }
 
-
 pub struct Task {
     pub future: RefCell<ExecutorFuture>,
     pub b : Mutex<TaskBookkeeping>,
@@ -40,7 +39,6 @@ impl Task {
         let mut book = self.b.lock().unwrap();
         let execution_cx = unsafe { &*(book.producer as *const State) }; // state is pinned
         let mut parent_waiting = false;
-
         let task_parent = book.parent.take();
         {
             if let Some(ref parent_book_locked) = task_parent {
@@ -49,8 +47,9 @@ impl Task {
                 parent_book.children.retain(|child| {
                     self.as_ref() as *const Self != *child as *const Self
                 });
-                // if this task was not removed from the parent, i.e. the parent is waiting
+                
                 if len == parent_book.children.len() {
+                    // this task was not removed from the parent, i.e. the parent is waiting
                     parent_waiting = true;
                 }
             }
@@ -61,19 +60,16 @@ impl Task {
         if execution_cx.is_empty() {
             execution_cx.notify();
         }
-    
     }
 
     pub fn task_id(arc : &Arc<Self> ) -> usize {
-        // pin this
-        arc.as_ref() as *const Self as usize
+        arc.as_ref() as *const Self as usize // logically pinned, todo: pin
     }
 }
 
 pub fn current_task() -> SharedTask {
     CURRENT.with(|x| { x.borrow().as_ref().unwrap().upgrade()}).unwrap()
 }
-
 
 thread_local! {
     pub static CURRENT: RefCell<Option<WeakTask>> = RefCell::new(None);
