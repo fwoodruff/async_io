@@ -1,6 +1,6 @@
 # async_io
 
-This is an asynchronous runtime written in Rust. It fills the same role as the async-std and Tokio crates. Inspiration was taken from Cppcoro and Boost Asio.
+This is an asynchronous runtime written in Rust. It fills the same role as the async-std and Tokio crates. Further inspiration was taken from Cppcoro and Boost Asio.
 
 When writing server-like programs, it is easier to reason about forked processes and blocking I/O, than polling and threadpooling. Liberally spawning processes (or threads), then blocking on socket I/O calls, incurs large performance penalties.
 
