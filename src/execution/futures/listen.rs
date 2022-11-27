@@ -11,7 +11,7 @@ pub struct Listener {
 
 impl<'a> Listener {
     pub fn bind(address : &str) -> std::io::Result<Self> {
-        let listener = mio::net::TcpListener::bind(address.parse().unwrap())?;
+        let listener = mio::net::TcpListener::bind(address.parse().expect("Couldn't read the address"))?;
         Ok(Listener { listener } )
     }
 
@@ -27,7 +27,7 @@ pub struct Stream {
 unsafe impl Sync for Stream {} // future should never be polled by more than one thread
 
 impl<'a> Stream {
-    pub fn new(stream : TcpStream) -> Self {
+    pub(super) fn new(stream : TcpStream) -> Self {
         Stream {
             stream : RefCell::new(stream),
         }

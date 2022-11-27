@@ -34,8 +34,8 @@ async fn client(stream : Stream) {
 }
 
 async fn async_main() {
-    let ip = fs::read_to_string("src/config.txt").expect("Unable to read file");
-    let mut listener = Listener::bind(&ip).unwrap();
+    let ip = fs::read_to_string("src/config.txt").expect("Unable to read address");
+    let mut listener = Listener::bind(&ip).expect("Couldn't bind to port");
     while let Ok(stream) = listener.accept().await {
         async_spawn(
             client(stream)

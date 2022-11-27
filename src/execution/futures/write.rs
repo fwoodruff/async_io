@@ -11,7 +11,7 @@ pub struct WriteFuture<'a> {
 unsafe impl Send for WriteFuture<'_> {} // future has a single owner when dropped or polled
 
 impl<'a> WriteFuture<'a> {
-    pub fn new(buff : &'a [u8], stream : &'a RefCell<TcpStream>) -> Self {
+    pub(super) fn new(buff : &'a [u8], stream : &'a RefCell<TcpStream>) -> Self {
         Self {
             buff,
             stream,

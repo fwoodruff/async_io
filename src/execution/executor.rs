@@ -11,13 +11,13 @@ use std::{
     pin::Pin
 };
 
-pub struct Executor {
+pub(super) struct Executor {
     execution_context: State,
 }
 
 impl Executor {
     
-    pub fn new(async_start: impl Future<Output = ()> + Send + 'static) -> Self {
+    pub(super) fn new(async_start: impl Future<Output = ()> + Send + 'static) -> Self {
         let result = Self {
             execution_context: State::new(),
         };
@@ -68,7 +68,7 @@ impl Executor {
         }
     }
 
-    pub fn run_main(self : Pin<&Self>) {
+    pub(super) fn run_main(self : Pin<&Self>) {
         let mut threads : Vec<std::thread::JoinHandle<()>> = Vec::new();
         for _ in 0..NUMTHREADS {
             let exec = self.get_ref() as *const Executor as usize;

@@ -15,7 +15,7 @@ use super::{
 };
 use mio::Interest;
 
-pub struct SharedPoller {
+pub(in crate::execution) struct SharedPoller {
     read_socket : Mutex<RefCell<mio::net::UnixStream>>,
     write_socket : Mutex<mio::net::UnixStream>,
     single_access : Mutex<bool>,
@@ -25,8 +25,8 @@ pub struct SharedPoller {
 }
 
 impl SharedPoller {
-    pub fn new() -> Self {
-        let (read_socket, write_socket) = mio::net::UnixStream::pair().unwrap();
+    pub(super) fn new() -> Self {
+        let (read_socket, write_socket) = mio::net::UnixStream::pair().expect("Couldn't create a pipe");
         let res = Self {
             read_socket : Mutex::new(RefCell::new(read_socket)),
             write_socket : Mutex::new(write_socket),
@@ -45,7 +45,7 @@ impl SharedPoller {
 
     fn force_lock(&self) -> std::sync::MutexGuard<mio::Poll> {
         let mut buff = [0u8; 1];
-        while self.write_socket.lock().unwrap().write(&buff[..]).unwrap() != 1 {
+        while self.write_socket.lock().unwrap().write(&buff[..]).expect("failed to write byte to pipe") != 1 {
             eprintln!("reloop");
         }
         let res = self.locked_poller.lock().unwrap();
@@ -57,19 +57,19 @@ impl SharedPoller {
         res
     }
 
-    pub fn register(&self, source : &mut impl mio::event::Source, task : SharedTask, interests : Interest) {
+    pub(in crate::execution) fn register(&self, source : &mut impl mio::event::Source, task : SharedTask, interests : Interest) {
         let poller = self.force_lock();
         let token = mio::Token(Task::task_id(&task));
         self.token_map.lock().unwrap().insert(token, task);
         let _res = poller.registry().register(source, token, interests);
     }
 
-    pub fn deregister(&self, source : &mut impl mio::event::Source) {
+    pub(in crate::execution) fn deregister(&self, source : &mut impl mio::event::Source) {
         let poller = self.force_lock();
         let _res = poller.registry().deregister(source);
     }
 
-    pub fn poll(&self) -> Option<Vec<SharedTask>> {
+    pub(super) fn poll(&self) -> Option<Vec<SharedTask>> {
         let access = self.single_access.try_lock();
         if let Err(_error) = access {
             return None;
@@ -95,11 +95,11 @@ impl SharedPoller {
         Some(res)
     }
 
-    pub fn notify(&self) {
+    pub(super) fn notify(&self) {
         let _ = self.force_lock();
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(super) fn is_empty(&self) -> bool {
         let tokens = self.token_map.lock().unwrap();
         tokens.is_empty()
     }

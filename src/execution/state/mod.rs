@@ -11,7 +11,7 @@ use super:: {
 };
 use std::sync::Arc;
 
-pub struct State {
+pub(in crate::execution) struct State {
     cx : PendingTasks,
     cv : std::sync::Condvar,
     pub pl : SharedPoller,
@@ -26,17 +26,17 @@ impl State {
         }
     }
 
-    pub fn spawn(&self, task: SharedTask) {
+    pub(super) fn spawn(&self, task: SharedTask) {
         self.push(task);
         self.pl.notify();
         self.cv.notify_one();
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(super) fn is_empty(&self) -> bool {
         self.cx.empty() && self.pl.is_empty()
     }
 
-    pub fn wait(&self) {
+    pub(super) fn wait(&self) {
         let mut cx_guarded = self.cx.to_poll.lock().unwrap();
         while cx_guarded.is_empty() && !( self.pl.is_empty() && cx_guarded.is_empty()) {
             cx_guarded = self.cv.wait(cx_guarded).unwrap();
@@ -45,19 +45,19 @@ impl State {
         self.cv.notify_one();
     }
 
-    pub fn push(&self, task: SharedTask) {
+    pub(super) fn push(&self, task: SharedTask) {
         self.cx.push(task);
     }
     
-    pub fn pop(&self) -> Option<SharedTask> {
+    pub(super) fn pop(&self) -> Option<SharedTask> {
         self.cx.pop()
     }
 
-    pub fn poll(&self) -> Option<Vec<Arc<Task>>> {
+    pub(super) fn poll(&self) -> Option<Vec<Arc<Task>>> {
         self.pl.poll()
     }
 
-    pub fn notify(&self) {
+    pub(super) fn notify(&self) {
         self.pl.notify();
         self.cv.notify_one();
     }

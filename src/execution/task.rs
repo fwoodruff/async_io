@@ -6,14 +6,14 @@ use std::sync::{Arc, Mutex};
 use super::*;
 
 type ExecutorFuture = Pin<Box<dyn Future<Output = ()> + Send + 'static>>;
-pub type SharedTask = Arc<Task>;
+pub(super) type SharedTask = Arc<Task>;
 type WeakTask = std::sync::Weak<Task>;
 
 pub const NUMTHREADS : usize = 2;
 pub const PIPE_TOKEN : usize = 0;
 
 pub struct TaskBookkeeping {
-    pub parent: Option<SharedTask>, // Arc synchronisation necessary
+    parent: Option<SharedTask>, // Arc synchronisation necessary
     pub children: Vec<usize>, // Cast as *const Task, memory safe it is because never dereferenced
     pub producer : usize, // Cast as *const State, memory safe because pinned
 }
@@ -24,7 +24,7 @@ pub struct Task {
 }
 
 impl Task {
-    pub fn new(future : ExecutorFuture, parent : Option<SharedTask>, producer : *const State) -> Self {
+    pub(super) fn new(future : ExecutorFuture, parent : Option<SharedTask>, producer : *const State) -> Self {
         Self {  
             future: RefCell::new(future),
             b : Mutex::new(TaskBookkeeping { 
@@ -35,7 +35,7 @@ impl Task {
         }
     }
 
-    pub fn join_parent(self : Arc<Self>) {
+    pub(super) fn join_parent(self : Arc<Self>) {
         let mut book = self.b.lock().unwrap();
         let execution_cx = unsafe { &*(book.producer as *const State) }; // state is pinned
         let mut parent_waiting = false;
@@ -67,10 +67,10 @@ impl Task {
     }
 }
 
-pub fn current_task() -> SharedTask {
+pub(super) fn current_task() -> SharedTask {
     CURRENT.with(|x| { x.borrow().as_ref().unwrap().upgrade()}).unwrap()
 }
 
 thread_local! {
-    pub static CURRENT: RefCell<Option<WeakTask>> = RefCell::new(None);
+    pub(super) static CURRENT: RefCell<Option<WeakTask>> = RefCell::new(None);
 }
