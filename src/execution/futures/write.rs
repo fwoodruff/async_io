@@ -20,30 +20,25 @@ impl<'a> WriteFuture<'a> {
     }
 }
 
-impl Future for WriteFuture<'_> {
-    type Output = Result<usize, std::io::Error>;
-    fn poll(mut self: Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
-        
-        loop {
-            let mut stream_borrow = self.stream.borrow_mut();
-            let mut stream_ref = stream_borrow.by_ref();
-            let res = std::io::Write::write(&mut stream_ref, self.buff);
-            let state_ptr = current_state();
-            let state = unsafe { &mut *state_ptr };
-            match res {
+#[macro_export]
+macro_rules! readwriteresult {
+    ( $res:expr, $slef:expr, $stream_ref:expr ) => {
+        let state_ptr = current_state();
+        let state = unsafe { &mut *state_ptr };
+            match $res {
                 Ok(_) => {
-                    if self.registered {
-                        state.pl.deregister(stream_ref);
-                        self.registered = false;
+                    if $slef.registered {
+                        state.pl.deregister($stream_ref);
+                        $slef.registered = false;
                     }
-                    return std::task::Poll::Ready(res);
+                    return std::task::Poll::Ready($res);
                 }
                 Err(ref error) => {
                     match error.kind() {
                         std::io::ErrorKind::WouldBlock => {
-                            if !self.registered {
-                                state.pl.register(stream_ref, current_task(), mio::Interest::READABLE);
-                                self.registered = true;
+                            if !$slef.registered {
+                                state.pl.register($stream_ref, current_task(), mio::Interest::READABLE);
+                                $slef.registered = true;
                             }
                             return std::task::Poll::Pending;
                         }
@@ -51,17 +46,28 @@ impl Future for WriteFuture<'_> {
                             continue;
                         }
                         _ => {
-                            if self.registered {
-                                state.pl.deregister(stream_ref);
-                                self.registered = false;
+                            if $slef.registered {
+                                state.pl.deregister($stream_ref);
+                                $slef.registered = false;
                             }
-                            return std::task::Poll::Ready(res);
+                            return std::task::Poll::Ready($res);
                         }
                     }
                 }
             }
+            
+    };
+}
+
+
+impl Future for WriteFuture<'_> {
+    type Output = Result<usize, std::io::Error>;
+    fn poll(mut self: Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+        loop {
+            let mut stream_borrow = self.stream.borrow_mut();
+            let mut stream_ref = stream_borrow.by_ref();
+            let res = std::io::Write::write(&mut stream_ref, self.buff);
+            readwriteresult!(res, self, stream_ref);
         }
     }
-
-    
 }
