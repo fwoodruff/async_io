@@ -34,6 +34,7 @@ impl SharedPoller {
             token_map : Mutex::new(HashMap::new()),
             single_access : Mutex::new(false),
         };
+        
         {
             let poller = res.locked_poller.lock().unwrap();
             let mut rs = res.read_socket.lock().unwrap();
@@ -52,7 +53,7 @@ impl SharedPoller {
         let mut rr = self.read_socket.lock().unwrap();
         let bb = rr.get_mut();
         while  bb.read(&mut buff[..]).unwrap() != 1 {
-            println!("reloop");
+            eprintln!("reloop");
         }
         res
     }
@@ -90,13 +91,15 @@ impl SharedPoller {
                 continue;
             }
             let opt_task = self.token_map.lock().unwrap().remove(&tt).unwrap();
+            //todo!("deregister tasks here not in future poll");
+            
             res.push(opt_task);
         }
         Some(res)
     }
 
     pub(super) fn notify(&self) {
-        let _ = self.force_lock();
+        let _unused = self.force_lock();
     }
 
     pub(super) fn is_empty(&self) -> bool {

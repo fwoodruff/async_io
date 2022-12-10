@@ -46,15 +46,11 @@ impl<'a> Stream {
         while nb < buff.len() {
             let res = self.write(&buff[nb..]).await;
             match res {
-                Ok(result) => {
-                    nb += result;
-                }
-                Err(_) => {
-                    return res;
-                }
+                Ok(result) => nb += result,
+                Err(_) => return res
             }
         }
-        return Ok(nb);
+        Ok(nb)
     }
 }
 

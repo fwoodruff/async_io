@@ -29,7 +29,39 @@ impl Future for ReadFuture<'_> {
             let mut stream_borrow = self.stream.borrow_mut();
             let stream_ref = stream_borrow.by_ref();
             let res = stream_ref.read(self.buff);
-            crate::readwriteresult!(res, self, stream_ref);
+            let state_ptr = current_state();
+            let state = unsafe { &mut *state_ptr };
+            
+            match res {
+                Ok(_) => {
+                    if self.registered {
+                        state.pl.deregister(stream_ref);
+                        self.registered = false;
+                    }
+                    return std::task::Poll::Ready(res);
+                }
+                Err(ref error) => {
+                    match error.kind() {
+                        std::io::ErrorKind::WouldBlock => {
+                            if !self.registered {
+                                state.pl.register(stream_ref, current_task(), mio::Interest::READABLE);
+                                self.registered = true;
+                            }
+                            return std::task::Poll::Pending;
+                        }
+                        std::io::ErrorKind::Interrupted => {
+                            continue;
+                        }
+                        _ => {
+                            if self.registered {
+                                state.pl.deregister(stream_ref);
+                                self.registered = false;
+                            }
+                            return std::task::Poll::Ready(res);
+                        }
+                    }
+                }
+            }
         }
     }
 }

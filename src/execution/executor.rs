@@ -43,44 +43,53 @@ impl Executor {
         }
     }
 
+    
+
+    fn no_task(&self) {
+        match self.execution_context.poll() {
+            Some(woken_tasks) => self.push_woken(woken_tasks),
+            None => self.execution_context.wait(),
+        }
+    }
+
+    fn push_woken(&self, woken_tasks: Vec<Arc<Task>>) {
+        for task in woken_tasks.into_iter() {
+            self.execution_context.push(task);
+        }
+    }
+
+    fn thread_loop(&self) {
+        //todo!("try lock poll"); // I can then claim that this is lock free whenever there is anything to do
+        if self.execution_context.is_empty() { return; }
+        match self.execution_context.pop() {
+            Some(some_task) => self.poll_task(some_task),
+            None => self.no_task()
+        }
+    }
+
     fn run_thread(&self) {
         loop {
-            std::thread::sleep(std::time::Duration::from_millis(11));
-            if self.execution_context.is_empty() { return; }
-            let task = self.execution_context.pop();
-            match task {
-                Some(some_task) => {
-                    self.poll_task(some_task);
-                }
-                None => {
-                    match self.execution_context.poll() {
-                        Some(woken_tasks) => {
-                            for task in woken_tasks.into_iter() {
-                                self.execution_context.push(task);
-                            }
-                        }
-                        None => {
-                            self.execution_context.wait();
-                        }
-                    }
-                }
-            }
+            self.thread_loop();
         }
     }
 
     pub(super) fn run_main(self : Pin<&Self>) {
         let mut threads : Vec<std::thread::JoinHandle<()>> = Vec::new();
         for _ in 0..NUMTHREADS {
-            let exec = self.get_ref() as *const Executor as usize;
-            let thd = std::thread::spawn(move || {
-                let cc = unsafe { &*(exec as *const Executor) }; // Executor is pinned, so ok to Send a pointer to it
-                cc.run_thread();
-            });
-            threads.push(thd);
+            self.push_one(&mut threads);
         }
         for thd in threads.into_iter() {
             thd.join().expect("failed to join thread");
         }
+    }
+
+    fn push_one(self : Pin<&Self>, threads: &mut Vec<std::thread::JoinHandle<()>>) {
+        let exec = self.get_ref() as *const Executor as usize;
+        let thd = std::thread::spawn(move || {
+            let cc = unsafe { &*(exec as *const Executor) }; // Executor is pinned, so ok to Send a pointer to it
+            cc.run_thread();
+        });
+        threads.push(thd);
     }
 }
 

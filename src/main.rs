@@ -14,11 +14,12 @@ async fn client(stream : Stream) {
             println!("");
         }
         Err(_) => {
+            println!("error");
             return;
         }
     }
 
-    // https://rosettacode.org/wiki/Hello_world/Web_server#Rust
+    // string from https://rosettacode.org/wiki/Hello_world/Web_server#Rust
     let response =
         "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n
         <!DOCTYPE html><html><head><title>Bye-bye baby bye-bye</title>
@@ -27,10 +28,10 @@ async fn client(stream : Stream) {
         text-shadow: 0 0 2mm red}</style></head>
         <body><h1>Goodbye, world!</h1></body></html>\r\n".as_bytes();
 
-        if let Err(_) = stream.write_all(response).await {
-            return;
-        }
-    
+
+    if let Err(_) = stream.write_all(response).await {
+        return;
+    }
 }
 
 async fn async_main() {
