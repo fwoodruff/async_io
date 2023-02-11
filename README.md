@@ -1,6 +1,6 @@
 # async_io
 
-This is an asynchronous runtime written in Rust. Tokio, Goroutines and Boost Asio are enterprise projects addressing the same problem.
+This is an asynchronous runtime written in Rust. Tokio and Boost Asio are enterprise projects addressing the same problem.
 
 When writing I/O bound multitasking programs, like servers, it is easier to reason about forked processes and blocking I/O, than polling and thread pool management. However liberally spawning processes (or threads), then blocking on socket I/O calls, puts substantial strain on the operating system.
 
