@@ -11,21 +11,12 @@ use super::{
 // the queue of tasks that can resume
 #[derive(Default)]
 pub struct PendingTasks {
-    pub(super)
-    to_poll : Mutex<VecDeque<SharedTask>>,
+    pub to_poll : Mutex<VecDeque<SharedTask>>,
 }
 
 impl PendingTasks {
-    pub(super) 
-    fn new() -> Self {
+    pub fn new() -> Self {
         Default::default()
-    }
-
-    // there are no tasks
-    pub(super)
-    fn empty(&self) -> bool {
-        let guard = self.to_poll.lock().unwrap();
-        guard.is_empty()
     }
 
     // try take a task
@@ -42,11 +33,11 @@ impl PendingTasks {
     }
 }
 
-// for the current task running, determine the executor it is running on
+// for the current task running, retrieve the executor it is running on
 pub(in super::super)
-fn current_state() -> *mut State {
+unsafe fn current_state<'a>() -> &'a mut State {
     let current_task = CURRENT.with(|x| { x.borrow().as_ref().unwrap().upgrade().unwrap()});
     let v = current_task.b.lock().unwrap();
     let res = v.producer as *mut State;
-    res
+    &mut (*res)
 }

@@ -37,8 +37,8 @@ impl<'a> AcceptFuture<'a> {
 impl Future for AcceptFuture<'_> {
     type Output = Result<Stream, std::io::Error>;
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> std::task::Poll<Self::Output> {
-        let state_ptr = current_state();
-        let state = unsafe { &mut *state_ptr };
+        // executors must live longer than their tasks
+        let state = unsafe { current_state() } ;
         loop {
             let tcp_stream = self.listener.accept();
             match tcp_stream {

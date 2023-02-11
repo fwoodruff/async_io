@@ -24,13 +24,14 @@ impl<'a> ReadFuture<'a> {
 
 impl Future for ReadFuture<'_> {
     type Output = Result<usize, std::io::Error>;
+    // polling context is happy for us to try reading from the socket
     fn poll(mut self: Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
         loop {
             let mut stream_borrow = self.stream.borrow_mut();
             let stream_ref = stream_borrow.by_ref();
             let res = stream_ref.read(self.buff);
-            let state_ptr = current_state();
-            let state = unsafe { &mut *state_ptr };
+            // executors must live longer than their tasks
+            let state = unsafe { current_state() } ;
             
             match res {
                 Ok(_) => {

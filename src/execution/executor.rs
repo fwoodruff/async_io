@@ -10,6 +10,7 @@ use std::{
     future::Future,
     pin::Pin,
 };
+
 use pin_weak::sync::PinWeak;
 
 pub(super)
@@ -19,13 +20,14 @@ struct Executor {
 
 impl Executor {
     // Creates a new executor with the async entry point
-    pub(super) fn new(async_start: impl Future<Output = ()> + Send + 'static) -> Self {
+    pub(super)
+    fn new(async_start: impl Future<Output = ()> + Send + 'static) -> Self {
         let result = Self {
             execution_context: State::new(),
         };
         let task = Task::new(Box::pin(async_start), None, &result.execution_context);
         let shared_task = Arc::pin(task);
-        result.execution_context.spawn(shared_task);
+        result.execution_context.set_task(shared_task);
         result
     }
 
@@ -40,7 +42,7 @@ impl Executor {
         drop(fut);
         match res {
             std::task::Poll::Ready(_) => {
-                some_task.join_parent();
+                self.execution_context.join_parent(some_task);
             },
             std::task::Poll::Pending => {},
         }
@@ -55,28 +57,26 @@ impl Executor {
         }
     }
 
+    // Polling yielded a few tasks so we should add them to the executor's work queue.
     fn push_woken(self : Pin<&Self>, woken_tasks: Vec<SharedTask>) {
         for task in woken_tasks.into_iter() {
             self.execution_context.push(task);
         }
     }
 
-    fn thread_loop(self : Pin<&Self>) {
-        // BAD, FIX ME
-        // We need to keep the thread pool alive until the final task is done
-        if self.execution_context.is_empty() { return; }
-        match self.execution_context.pop() {
-            Some(some_task) => self.poll_task(some_task),
-            None => self.no_task()
+    fn thread_loop(self : Pin<&Self>) -> bool {
+        let res = !self.execution_context.is_empty();
+        if res {
+            match self.execution_context.pop() {
+                Some(some_task) => self.poll_task(some_task),
+                None => self.no_task()
+            }
         }
+        res
     }
 
     fn run_thread(self : Pin<&Self>) {
-        // BAD, FIX ME
-        // We need to leave the loop on program exit
-        loop {
-            self.thread_loop();
-        }
+        while self.thread_loop() { }
     }
 
     // Start the thread pool and set the user code running
@@ -95,8 +95,8 @@ impl Executor {
     fn push_one(self : Pin<&Self>, threads: &mut Vec<std::thread::JoinHandle<()>>) {
         let exec = self.get_ref() as *const Executor as usize;
         let thd = std::thread::spawn(move || {
-            let cc = unsafe { Pin::new(&*(exec as *const Executor)) }; // Executor is pinned, so ok to Send a pointer to it
-            cc.run_thread();
+            let thread_exec = unsafe { Pin::new(&*(exec as *const Executor)) }; // Executor is pinned, so ok to Send a pointer to it
+            thread_exec.run_thread();
         });
         threads.push(thd);
     }
