@@ -15,7 +15,8 @@ use super::{
 };
 use mio::Interest;
 
-pub(in crate::execution) struct SharedPoller {
+pub
+struct SharedPoller {
     read_socket : Mutex<RefCell<mio::net::UnixStream>>,
     write_socket : Mutex<mio::net::UnixStream>,
     single_access : Mutex<bool>,
@@ -25,7 +26,10 @@ pub(in crate::execution) struct SharedPoller {
 }
 
 impl SharedPoller {
-    pub(super) fn new() -> Self {
+    // Tasks that need to wait on network IO register themselves with a SharedPoller object
+    // Polling yields tasks that can commence with their IO operations
+    pub(super)
+    fn new() -> Self {
         let (read_socket, write_socket) = mio::net::UnixStream::pair().expect("Couldn't create a pipe");
         let res = Self {
             read_socket : Mutex::new(RefCell::new(read_socket)),
@@ -44,6 +48,8 @@ impl SharedPoller {
         res
     }
 
+    // If a poller is blocked on polling, we need to unblock so we can update with new tasks
+    // otherwise we're just locking a mutex
     fn force_lock(&self) -> std::sync::MutexGuard<mio::Poll> {
         let mut buff = [0u8; 1];
         while self.write_socket.lock().unwrap().write(&buff[..]).expect("failed to write byte to pipe") != 1 {
@@ -57,20 +63,26 @@ impl SharedPoller {
         }
         res
     }
-
-    pub(in crate::execution) fn register(&self, source : &mut impl mio::event::Source, task : SharedTask, interests : Interest) {
+    
+    // Register a task which can be woken up when network IO completes
+    pub(in crate::execution)
+    fn register(&self, source : &mut impl mio::event::Source, task : SharedTask, interests : Interest) {
         let poller = self.force_lock();
         let token = mio::Token(Task::task_id(&task));
         self.token_map.lock().unwrap().insert(token, task);
         let _res = poller.registry().register(source, token, interests);
     }
 
-    pub(in crate::execution) fn deregister(&self, source : &mut impl mio::event::Source) {
+    // remove a task so that it is no longer waiting for network IO
+    pub(in crate::execution)
+    fn deregister(&self, source : &mut impl mio::event::Source) {
         let poller = self.force_lock();
         let _res = poller.registry().deregister(source);
     }
 
-    pub(super) fn poll(&self) -> Option<Vec<SharedTask>> {
+    // List all the tasks that can commence
+    pub(super)
+    fn poll(&self) -> Option<Vec<SharedTask>> {
         let access = self.single_access.try_lock();
         if let Err(_error) = access {
             return None;
@@ -91,18 +103,20 @@ impl SharedPoller {
                 continue;
             }
             let opt_task = self.token_map.lock().unwrap().remove(&tt).unwrap();
-            //todo!("deregister tasks here not in future poll");
-            
             res.push(opt_task);
         }
         Some(res)
     }
 
-    pub(super) fn notify(&self) {
+    // nudge the poller so it returns with some or no tasks
+    pub(super)
+    fn notify(&self) {
         let _unused = self.force_lock();
     }
 
-    pub(super) fn is_empty(&self) -> bool {
+    // checks if there are any tasks registered
+    pub(super)
+    fn is_empty(&self) -> bool {
         let tokens = self.token_map.lock().unwrap();
         tokens.is_empty()
     }

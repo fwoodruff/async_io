@@ -11,20 +11,23 @@ pub struct WriteFuture<'a> {
 unsafe impl Send for WriteFuture<'_> {} // future has a single owner when dropped or polled
 
 impl<'a> WriteFuture<'a> {
-    pub(super) fn new(buff : &'a [u8], stream : &'a RefCell<TcpStream>) -> Self {
+    pub(super)
+    fn new(buff : &'a [u8], stream : &'a RefCell<TcpStream>) -> Self {
         Self {
             buff,
             stream,
             registered : false,
         }
     }
-    
+
+    // remove write request from polling context
     fn deregister(mut self: Pin<&mut Self>, state: &mut State, stream_ref: &mut TcpStream) {
         if self.registered {
             state.pl.deregister(stream_ref);
             self.registered = false;
         }
     }
+    // add write request to polling context
     fn register(mut self: Pin<&mut Self>, state: &mut State, stream_ref: &mut TcpStream) {
         if !self.registered {
             state.pl.register(stream_ref, current_task(), mio::Interest::READABLE);

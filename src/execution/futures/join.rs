@@ -1,10 +1,8 @@
 
 
 use crate::execution::task::current_task;
+use crate::execution::task::TaskID;
 
-use super::super::{
-    Task,
-};
 use std::{
     task::Context,
     pin::Pin,
@@ -12,13 +10,13 @@ use std::{
 };
 
 pub struct JoinFuture {
-    child : usize //*const Task,
+    child : TaskID
 }
 
 impl JoinFuture {
-    pub(in crate::execution) fn new(child : *const Task) -> Self {
+    pub(in crate::execution) fn new(child : TaskID) -> Self {
         Self {
-            child : child as usize,
+            child,
         }
     }
 }
@@ -30,9 +28,9 @@ impl Future for JoinFuture {
         let mut current_book = current_task.b.lock().unwrap();
         let len = current_book.children.len();
         current_book.children.retain(|tchild| {
-            let book_child = *tchild as *const Task;
-            let future_child = self.child as *const Task;
-            future_child != book_child
+            let book_child = tchild;
+            let future_child = self.child;
+            future_child != *book_child
         });
         if len == current_book.children.len() {
             std::task::Poll::Ready(())
