@@ -1,4 +1,4 @@
-mod poll;
+pub mod poll;
 pub mod execute;
 
 use super:: {

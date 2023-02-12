@@ -1,11 +1,10 @@
 
 use super::super::*;
-use crate::execution::state::execute::current_state;
+use crate::execution::state::{execute::current_state, poll::NetFD};
 
 pub struct ReadFuture<'a> {
     buff : &'a mut [u8],
     stream : &'a RefCell<TcpStream>,
-    registered : bool,
 
 }
 unsafe impl Send for ReadFuture<'_> {} // future has a single owner when dropped or polled
@@ -15,7 +14,6 @@ impl<'a> ReadFuture<'a> {
         Self {
             buff,
             stream,
-            registered : false,
         }
     }
 }
@@ -35,32 +33,20 @@ impl Future for ReadFuture<'_> {
             
             match res {
                 Ok(_) => {
-                    if self.registered {
-                        state.pl.deregister(stream_ref, current_task());
-                        self.registered = false;
-                    }
+                    
                     return std::task::Poll::Ready(res);
                 }
                 Err(ref error) => {
                     match error.kind() {
                         
                         std::io::ErrorKind::WouldBlock => {
-                            
-                            if !self.registered {
-                                state.pl.register(stream_ref, current_task(), mio::Interest::READABLE);
-                                self.registered = true;
-                            }
-                            
+                            state.pl.register(NetFD::Stream(stream_ref), current_task(), mio::Interest::READABLE);
                             return std::task::Poll::Pending;
                         }
                         std::io::ErrorKind::Interrupted => {
                             continue;
                         }
                         _ => {
-                            if self.registered {
-                                state.pl.deregister(stream_ref, current_task());
-                                self.registered = false;
-                            }
                             return std::task::Poll::Ready(res);
                         }
                     }

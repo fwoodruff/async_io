@@ -10,11 +10,36 @@ use std::{
 };
 use mio::Interest;
 
+
 use super::{ 
     SharedTask,
     super::PIPE_TOKEN,
 };
 use std::thread;
+
+
+
+
+pub enum NetFD {
+    Listener(*mut mio::net::TcpListener),
+    Stream(*mut mio::net::TcpStream),
+}
+
+
+
+struct RegisteredTask {
+    task : SharedTask,
+    descriptor : NetFD,
+}
+
+impl<'a> RegisteredTask {
+    fn new(task: SharedTask, descriptor : NetFD) -> Self {
+        Self {
+            task,
+            descriptor,
+        }
+    }
+}
 
 pub
 struct SharedPoller {
@@ -22,11 +47,11 @@ struct SharedPoller {
     write_socket : Mutex<mio::net::UnixStream>,
     unique_access : Mutex<bool>,
     locked_poller : Mutex<mio::Poll>,
-    token_map : Mutex<HashMap<mio::Token, SharedTask>>,
+    token_map : Mutex<HashMap<mio::Token, RegisteredTask >>,
     // poll never reads from a pipe, and will always unblock the poll if a registration is attempted
 }
 
-impl SharedPoller {
+impl<'a> SharedPoller {
     // Tasks that need to wait on network IO register themselves with a SharedPoller object
     // Polling yields tasks that can commence with their IO operations
     pub(super)
@@ -74,27 +99,21 @@ impl SharedPoller {
     
     // Register a task which can be woken up when network IO completes
     pub(in crate::execution)
-    fn register(&self, source : &mut impl mio::event::Source, task : SharedTask, interests : Interest) {
-        
+    fn register(&self, source : NetFD, task : SharedTask, interests : Interest) {
         let poller = self.force_lock();
-        
         let token = mio::Token(task.task_id());
-        let old_value = self.token_map.lock().unwrap().insert(token, task);
-        
+        let _res = match source {
+            NetFD::Listener(listener) => poller.registry().register(unsafe{&mut *listener}, token, interests),
+            NetFD::Stream(stream) => poller.registry().register(unsafe{&mut *stream}, token, interests),
+        };
+        let rtask = RegisteredTask::new(task, source);
+        let old_value = self.token_map.lock().unwrap().insert(token, rtask);
         
         if let Some(_value) = old_value {
             assert!(false);
         }
-        
-        let _res = poller.registry().register(source, token, interests);
-        
-    }
 
-    // remove a task so that it is no longer waiting for network IO
-    pub(in crate::execution)
-    fn deregister(&self, source : &mut impl mio::event::Source, _task : SharedTask) {
-        let local_poll = self.force_lock();
-        let _res = local_poll.registry().deregister(source);
+        
     }
 
     // List all the tasks that can commence
@@ -120,17 +139,13 @@ impl SharedPoller {
                 continue;
             }
             
+            let reg_task = self.token_map.lock().unwrap().remove(&tt).unwrap();
+            woken_tasks.push(reg_task.task);
             
-            let opt_task = self.token_map.lock().unwrap().remove(&tt);
-            if let Some(task) = opt_task {
-                // This subtly terrible if statement introduces short bursts of no-op syscall hot-loops.
-                // The alternative is rewriting Mio to let me deregister arbitrary file descriptors
-                // from the kqueue/epoll context because Mio::Poll decided to use both static dispatch
-                // and inheritance rather than composition for Sources.
-                woken_tasks.push(task);
-            }
-
-            
+            let _res = match reg_task.descriptor {
+                NetFD::Listener(listener) => local_poll.registry().deregister(unsafe{&mut *listener}),
+                NetFD::Stream(stream) => local_poll.registry().deregister(unsafe{&mut *stream}),
+            };
         }
         Some(woken_tasks)
     }

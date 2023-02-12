@@ -1,6 +1,7 @@
 use mio::net::TcpListener;
 use std::future::Future;
 use crate::Stream;
+use crate::execution::state::poll::NetFD;
 use std::pin::Pin;
 use std::task::Context;
 use crate::execution::state::execute::current_state;
@@ -8,30 +9,19 @@ use crate::execution::current_task;
 
 pub struct AcceptFuture<'a> {
     listener : &'a mut TcpListener,
-    registered : bool,
 }
 
 impl<'a> AcceptFuture<'a> {
     pub(in crate::execution::futures) fn new(listener : &'a mut TcpListener) -> Self {
         Self {
             listener,
-            registered : false,
         }
     }
 
     fn register(mut self: Pin<&mut Self>, state: &mut crate::execution::state::State) {
-        if !self.registered {
-            state.pl.register(self.listener, current_task(), mio::Interest::READABLE);
-            self.registered = true;
-        }
+        state.pl.register(NetFD::Listener(&mut *self.listener), current_task(), mio::Interest::READABLE);
     }
     
-    fn deregister(mut self: Pin<&mut Self>, state: &mut crate::execution::state::State) {
-        if self.registered {
-            state.pl.deregister(self.listener, current_task());
-            self.registered = false;
-        }
-    }
 }
 
 impl Future for AcceptFuture<'_> {
@@ -43,7 +33,6 @@ impl Future for AcceptFuture<'_> {
             let tcp_stream = self.listener.accept();
             match tcp_stream {
                 Ok(stream) => {
-                    self.register(state);
                     return std::task::Poll::Ready(Ok(Stream::new(stream.0)));
                 }
                 Err(error) => {
@@ -56,7 +45,6 @@ impl Future for AcceptFuture<'_> {
                             continue;
                         }
                         _ => {
-                            self.deregister(state);
                             return std::task::Poll::Ready(Err(error));
                         }
                     }

@@ -1,11 +1,11 @@
 
 use super::super::*;
 use crate::execution::state::execute::current_state;
+use crate::execution::state::poll::NetFD;
 
 pub struct WriteFuture<'a> {
     buff : &'a [u8],
     stream : &'a RefCell<TcpStream>,
-    registered : bool,
 }
 
 unsafe impl Send for WriteFuture<'_> {} // future has a single owner when dropped or polled
@@ -16,23 +16,13 @@ impl<'a> WriteFuture<'a> {
         Self {
             buff,
             stream,
-            registered : false,
         }
     }
 
-    // remove write request from polling context
-    fn deregister(mut self: Pin<&mut Self>, state: &mut State, stream_ref: &mut TcpStream) {
-        if self.registered {
-            state.pl.deregister(stream_ref, current_task());
-            self.registered = false;
-        }
-    }
     // add write request to polling context
-    fn register(mut self: Pin<&mut Self>, state: &mut State, stream_ref: &mut TcpStream) {
-        if !self.registered {
-            state.pl.register(stream_ref, current_task(), mio::Interest::READABLE);
-            self.registered = true;
-        }
+    fn register(self: Pin<&mut Self>, state: &mut State, stream_ref: &mut TcpStream) {
+        state.pl.register(NetFD::Stream(stream_ref), current_task(), mio::Interest::READABLE);
+        
     }
 }
 
@@ -51,7 +41,7 @@ impl Future for WriteFuture<'_> {
 
             match res {
                 Ok(_) => {
-                    self.deregister(state, stream_ref);
+                    
                     return std::task::Poll::Ready(res);
                 }
                 Err(ref error) => {
@@ -64,7 +54,7 @@ impl Future for WriteFuture<'_> {
                             continue;
                         }
                         _ => {
-                            self.deregister(state, stream_ref);
+                            
                             return std::task::Poll::Ready(res);
                         }
                     }

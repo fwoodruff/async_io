@@ -60,6 +60,7 @@ impl Task {
         let lhs = Arc::into_raw(Pin::into_inner(self.clone()));
         lhs as TaskID
     }
+    
 }
 
 // Retrieve the currently running task from thread local memory
