@@ -102,7 +102,7 @@ impl SharedPoller {
             if tt.0 == PIPE_TOKEN {
                 continue;
             }
-            let opt_task = self.token_map.lock().unwrap().remove(&tt).unwrap();
+            let opt_task = self.token_map.lock().unwrap().remove(&tt).unwrap(); // did panic
             res.push(opt_task);
         }
         Some(res)

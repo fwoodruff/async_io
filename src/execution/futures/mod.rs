@@ -4,5 +4,6 @@ pub mod read;
 pub mod write;
 pub mod accept;
 pub mod connect;
+pub mod mutex;
 
-//todo: introduce a lock-free async_mutex, which async main can wait on
+

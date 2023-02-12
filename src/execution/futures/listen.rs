@@ -33,24 +33,28 @@ impl<'a> Stream {
         }
     }
 
-    pub fn read(&'a self, buff : &'a mut [u8] ) -> ReadFuture<'a> {
-        ReadFuture::new(buff, &self.stream)
+    pub fn read(&'a self, buffer : &'a mut [u8] ) -> ReadFuture<'a> {
+        ReadFuture::new(buffer, &self.stream)
     }
 
-    pub fn write(&'a self, buff : &'a [u8]) -> WriteFuture<'a> {
-        WriteFuture::new(buff, &self.stream)
+    pub fn write(&'a self, buffer : &'a [u8]) -> WriteFuture<'a> {
+        WriteFuture::new(buffer, &self.stream)
     }
 
-    pub async fn write_all(&'a self, buff : &'a [u8]) -> Result<usize, std::io::Error> {
-        let mut nb = 0;
-        while nb < buff.len() {
-            let res = self.write(&buff[nb..]).await;
-            match res {
-                Ok(result) => nb += result,
-                Err(_) => return res
+    pub async fn write_all(&'a self, buffer : &'a [u8]) -> Result<usize, std::io::Error> {
+        let mut byte_index = 0;
+        println!("writing all");
+        while byte_index < buffer.len() {
+            
+            let write_result = self.write(&buffer[byte_index..]).await;
+            println!("writing some");
+            match write_result {
+                Ok(bytes_written) => byte_index += bytes_written,
+                Err(_) => return write_result
             }
         }
-        Ok(nb)
+        println!("writing done");
+        Ok(byte_index)
     }
 }
 
