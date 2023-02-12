@@ -43,17 +43,13 @@ impl<'a> Stream {
 
     pub async fn write_all(&'a self, buffer : &'a [u8]) -> Result<usize, std::io::Error> {
         let mut byte_index = 0;
-        println!("writing all");
         while byte_index < buffer.len() {
-            
             let write_result = self.write(&buffer[byte_index..]).await;
-            println!("writing some");
             match write_result {
                 Ok(bytes_written) => byte_index += bytes_written,
                 Err(_) => return write_result
             }
         }
-        println!("writing done");
         Ok(byte_index)
     }
 }

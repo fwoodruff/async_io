@@ -23,7 +23,7 @@ impl<'a> WriteFuture<'a> {
     // remove write request from polling context
     fn deregister(mut self: Pin<&mut Self>, state: &mut State, stream_ref: &mut TcpStream) {
         if self.registered {
-            state.pl.deregister(stream_ref);
+            state.pl.deregister(stream_ref, current_task());
             self.registered = false;
         }
     }

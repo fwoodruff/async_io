@@ -10,6 +10,7 @@ use crate::execution::{
 use std::{fs, sync::Arc};
 
 async fn client(stream : Stream, mutex : Arc<AsyncMutex<usize>>) {
+    
     let mut buffer = [0u8; 1024];
     let result = stream.read(&mut buffer).await;
     match result {
@@ -25,6 +26,8 @@ async fn client(stream : Stream, mutex : Arc<AsyncMutex<usize>>) {
         }
     }
 
+    
+
     // string from https://rosettacode.org/wiki/Hello_world/Web_server#Rust
     let response =
         "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n
@@ -34,16 +37,15 @@ async fn client(stream : Stream, mutex : Arc<AsyncMutex<usize>>) {
         text-shadow: 0 0 2mm red}</style></head>
         <body><h1>Goodbye, world!</h1></body></html>\r\n".as_bytes();
 
-    if false {
-        // experimental - async mutex usage
-        let mut var = mutex.lock().await;
-        *var += 1;
-        println!("client number: {}", *var);
-    }
+    
+    // async mutex usage
+    let mut var = mutex.lock().await;
+    *var += 1;
+    println!("client number: {}", *var);
     
     
     if let Err(_) = stream.write_all(response).await {
-        return;
+        
     }
 }
 

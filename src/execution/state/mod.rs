@@ -7,7 +7,6 @@ use super:: {
         poll::SharedPoller
     },
     SharedTask,
-    Task,
 };
 
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -109,7 +108,7 @@ impl State {
 
     // poll the polling context for tasks that can resume
     pub(super) fn poll(&self) -> Option<Vec<SharedTask>> {
-        self.pl.poll()
+        self.pl.get_network_tasks()
     }
 
     // unblock the polling context and the thread pool

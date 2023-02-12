@@ -95,7 +95,8 @@ impl Executor {
     fn push_one(self : Pin<&Self>, threads: &mut Vec<std::thread::JoinHandle<()>>) {
         let exec = self.get_ref() as *const Executor as usize;
         let thd = std::thread::spawn(move || {
-            let thread_exec = unsafe { Pin::new(&*(exec as *const Executor)) }; // Executor is pinned, so ok to Send a pointer to it
+            let thread_exec = unsafe { Pin::new(&*(exec as *const Executor)) };
+            // Executor is pinned, so ok to Send a pointer to it
             thread_exec.run_thread();
         });
         threads.push(thd);

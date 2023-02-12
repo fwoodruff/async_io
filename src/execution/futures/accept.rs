@@ -28,7 +28,7 @@ impl<'a> AcceptFuture<'a> {
     
     fn deregister(mut self: Pin<&mut Self>, state: &mut crate::execution::state::State) {
         if self.registered {
-            state.pl.deregister(self.listener);
+            state.pl.deregister(self.listener, current_task());
             self.registered = false;
         }
     }

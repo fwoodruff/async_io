@@ -36,18 +36,21 @@ impl Future for ReadFuture<'_> {
             match res {
                 Ok(_) => {
                     if self.registered {
-                        state.pl.deregister(stream_ref);
+                        state.pl.deregister(stream_ref, current_task());
                         self.registered = false;
                     }
                     return std::task::Poll::Ready(res);
                 }
                 Err(ref error) => {
                     match error.kind() {
+                        
                         std::io::ErrorKind::WouldBlock => {
+                            
                             if !self.registered {
                                 state.pl.register(stream_ref, current_task(), mio::Interest::READABLE);
                                 self.registered = true;
                             }
+                            
                             return std::task::Poll::Pending;
                         }
                         std::io::ErrorKind::Interrupted => {
@@ -55,7 +58,7 @@ impl Future for ReadFuture<'_> {
                         }
                         _ => {
                             if self.registered {
-                                state.pl.deregister(stream_ref);
+                                state.pl.deregister(stream_ref, current_task());
                                 self.registered = false;
                             }
                             return std::task::Poll::Ready(res);

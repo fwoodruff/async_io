@@ -8,18 +8,19 @@ use std::{
         Write
     }
 };
+use mio::Interest;
+
 use super::{ 
     SharedTask,
     super::PIPE_TOKEN,
-    Task
 };
-use mio::Interest;
+use std::thread;
 
 pub
 struct SharedPoller {
     read_socket : Mutex<RefCell<mio::net::UnixStream>>,
     write_socket : Mutex<mio::net::UnixStream>,
-    single_access : Mutex<bool>,
+    unique_access : Mutex<bool>,
     locked_poller : Mutex<mio::Poll>,
     token_map : Mutex<HashMap<mio::Token, SharedTask>>,
     // poll never reads from a pipe, and will always unblock the poll if a registration is attempted
@@ -36,7 +37,7 @@ impl SharedPoller {
             write_socket : Mutex::new(write_socket),
             locked_poller : Mutex::new(mio::Poll::new().unwrap()),
             token_map : Mutex::new(HashMap::new()),
-            single_access : Mutex::new(false),
+            unique_access : Mutex::new(false),
         };
         
         {
@@ -51,61 +52,87 @@ impl SharedPoller {
     // If a poller is blocked on polling, we need to unblock so we can update with new tasks
     // otherwise we're just locking a mutex
     fn force_lock(&self) -> std::sync::MutexGuard<mio::Poll> {
-        let mut buff = [0u8; 1];
-        while self.write_socket.lock().unwrap().write(&buff[..]).expect("failed to write byte to pipe") != 1 {
-            eprintln!("reloop");
+        loop {
+            let mut buff = [0u8; 1];
+            while self.write_socket.lock().unwrap().write(&buff[..]).expect("failed to write byte to pipe") != 1 {
+                eprintln!("reloop");
+            }
+            let res = self.locked_poller.try_lock();
+            let mut rr = self.read_socket.lock().unwrap();
+            let bb = rr.get_mut();
+            while  bb.read(&mut buff[..]).unwrap() != 1 {
+                eprintln!("reloop");
+            }
+            if let Err(_) = res {
+                thread::yield_now();
+                continue;
+            }
+            return res.unwrap();
         }
-        let res = self.locked_poller.lock().unwrap();
-        let mut rr = self.read_socket.lock().unwrap();
-        let bb = rr.get_mut();
-        while  bb.read(&mut buff[..]).unwrap() != 1 {
-            eprintln!("reloop");
-        }
-        res
+        
     }
     
     // Register a task which can be woken up when network IO completes
     pub(in crate::execution)
     fn register(&self, source : &mut impl mio::event::Source, task : SharedTask, interests : Interest) {
+        
         let poller = self.force_lock();
-        let token = mio::Token(Task::task_id(&task));
-        self.token_map.lock().unwrap().insert(token, task);
+        
+        let token = mio::Token(task.task_id());
+        let old_value = self.token_map.lock().unwrap().insert(token, task);
+        
+        
+        if let Some(_value) = old_value {
+            assert!(false);
+        }
+        
         let _res = poller.registry().register(source, token, interests);
+        
     }
 
     // remove a task so that it is no longer waiting for network IO
     pub(in crate::execution)
-    fn deregister(&self, source : &mut impl mio::event::Source) {
-        let poller = self.force_lock();
-        let _res = poller.registry().deregister(source);
+    fn deregister(&self, source : &mut impl mio::event::Source, _task : SharedTask) {
+        let local_poll = self.force_lock();
+        let _res = local_poll.registry().deregister(source);
     }
 
     // List all the tasks that can commence
     pub(super)
-    fn poll(&self) -> Option<Vec<SharedTask>> {
-        let access = self.single_access.try_lock();
+    fn get_network_tasks(&self) -> Option<Vec<SharedTask>> {
+        let access = self.unique_access.try_lock();
         if let Err(_error) = access {
             return None;
         }
         if self.token_map.lock().unwrap().len() == 0 {
             return None;
         }
-        let mut poll = self.locked_poller.lock().unwrap();
+        let mut local_poll = self.locked_poller.lock().unwrap();
         let mut events = mio::Events::with_capacity(1024);
-        let pollres = poll.poll(&mut events, None);
-        let mut res = vec!();
+        let pollres = local_poll.poll(&mut events, None);
+        let mut woken_tasks = vec!();
         if let Err(_) = pollres {
-            return Some(res);
+            return Some(woken_tasks);
         }
         for event in events.into_iter() {
             let tt = event.token();
             if tt.0 == PIPE_TOKEN {
                 continue;
             }
-            let opt_task = self.token_map.lock().unwrap().remove(&tt).unwrap(); // did panic
-            res.push(opt_task);
+            
+            
+            let opt_task = self.token_map.lock().unwrap().remove(&tt);
+            if let Some(task) = opt_task {
+                // This subtly terrible if statement introduces short bursts of no-op syscall hot-loops.
+                // The alternative is rewriting Mio to let me deregister arbitrary file descriptors
+                // from the kqueue/epoll context because Mio::Poll decided to use both static dispatch
+                // and inheritance rather than composition for Sources.
+                woken_tasks.push(task);
+            }
+
+            
         }
-        Some(res)
+        Some(woken_tasks)
     }
 
     // nudge the poller so it returns with some or no tasks
