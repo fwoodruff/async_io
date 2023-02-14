@@ -27,12 +27,16 @@ impl Executor {
         };
         let task = Task::new(Box::pin(async_start), None, &result.execution_context);
         let shared_task = Arc::pin(task);
-        result.execution_context.set_task(shared_task);
+        result.execution_context.push(shared_task);
         result
     }
 
     // Runs a task up to its next suspend point on the current thread
+    // Async is conceptually hard so it's worth note that when a parent
+    // future awaits a child future that returns ready, the parent
+    // future does not then need to suspend, and this function is *not* called.
     fn poll_task(self : Pin<&Self>, some_task : SharedTask) {
+        println!("poll task");
         let wk = PinWeak::downgrade(some_task.clone());
         CURRENT.with(|x| { x.replace(Some(wk)); });
         let mut fut = some_task.future.borrow_mut();
@@ -42,7 +46,7 @@ impl Executor {
         drop(fut);
         match res {
             std::task::Poll::Ready(_) => {
-                self.execution_context.join_parent(some_task);
+                self.execution_context.join(some_task);
             },
             std::task::Poll::Pending => {},
         }

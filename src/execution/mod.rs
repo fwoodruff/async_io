@@ -5,7 +5,7 @@ mod task;
 pub mod futures;
 mod executor;
 
-use self::state::State;
+use self::state::blockingstate::State;
 use self::executor::Executor;
 use self::futures::{*, join::*};
 use self::task::*;
@@ -34,7 +34,7 @@ pub fn async_spawn(f: impl Future<Output = ()> + Send + 'static) -> join::JoinFu
         locking_cx = unsafe { &*( task_books.producer as *const State) };
     }
     let ptr = shared_new_task.task_id();
-    locking_cx.spawn(shared_new_task);
+    locking_cx.fork(shared_new_task);
     JoinFuture::new(ptr)
 }
 

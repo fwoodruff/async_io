@@ -9,12 +9,8 @@ use std::{
     }
 };
 use mio::Interest;
-
-
-use super::{ 
-    SharedTask,
-    super::PIPE_TOKEN,
-};
+use super::super::PIPE_TOKEN;
+use crate::execution::SharedTask;
 use std::thread;
 
 
@@ -24,8 +20,6 @@ pub enum NetFD {
     Listener(*mut mio::net::TcpListener),
     Stream(*mut mio::net::TcpStream),
 }
-
-
 
 struct RegisteredTask {
     task : SharedTask,
@@ -112,11 +106,9 @@ impl<'a> SharedPoller {
         if let Some(_value) = old_value {
             assert!(false);
         }
-
-        
     }
 
-    // List all the tasks that can commence
+    // List all the tasks that can resume
     pub(super)
     fn get_network_tasks(&self) -> Option<Vec<SharedTask>> {
         let access = self.unique_access.try_lock();
@@ -156,10 +148,4 @@ impl<'a> SharedPoller {
         let _unused = self.force_lock();
     }
 
-    // checks if there are any tasks registered
-    pub(super)
-    fn is_empty(&self) -> bool {
-        let tokens = self.token_map.lock().unwrap();
-        tokens.is_empty()
-    }
 }

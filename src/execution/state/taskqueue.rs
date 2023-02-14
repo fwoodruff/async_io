@@ -2,11 +2,10 @@ use std::{
     collections::VecDeque,
     sync::Mutex
 };
-use super::{
-    SharedTask, 
-    State, 
-    super::task::*
-};
+use crate::execution::SharedTask;
+use crate::execution::CURRENT;
+
+use super::blockingstate::State;
 
 // the queue of tasks that can resume
 #[derive(Default)]
@@ -20,17 +19,18 @@ impl PendingTasks {
     }
 
     // try take a task
-    pub(super)
+    pub
     fn pop(&self) -> Option<SharedTask> {
         let mut guard = self.to_poll.lock().unwrap();
         guard.pop_front()
     }
     
     // try add a task
-    pub(super) fn push(&self, task : SharedTask) {
+    pub fn push(&self, task : SharedTask) {
         let mut guard = self.to_poll.lock().unwrap();
         guard.push_back(task);
     }
+    
 }
 
 // for the current task running, retrieve the executor it is running on

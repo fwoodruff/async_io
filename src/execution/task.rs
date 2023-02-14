@@ -15,8 +15,6 @@ type WeakTask = PinWeak<Task>;
 pub const NUMTHREADS : usize = 2;
 pub const PIPE_TOKEN : usize = 0;
 
-
-
 pub(super)
 type TaskID = usize;
 

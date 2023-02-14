@@ -1,6 +1,6 @@
 
 use super::super::*;
-use crate::execution::state::{execute::current_state, poll::NetFD};
+use crate::execution::state::{taskqueue::current_state, poll::NetFD};
 
 pub struct ReadFuture<'a> {
     buff : &'a mut [u8],

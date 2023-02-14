@@ -2,9 +2,11 @@ use mio::net::TcpListener;
 use std::future::Future;
 use crate::Stream;
 use crate::execution::state::poll::NetFD;
+use crate::execution::state::taskqueue::current_state;
 use std::pin::Pin;
 use std::task::Context;
-use crate::execution::state::execute::current_state;
+use crate::execution::State;
+
 use crate::execution::current_task;
 
 pub struct AcceptFuture<'a> {
@@ -18,7 +20,7 @@ impl<'a> AcceptFuture<'a> {
         }
     }
 
-    fn register(mut self: Pin<&mut Self>, state: &mut crate::execution::state::State) {
+    fn register(mut self: Pin<&mut Self>, state: &mut State) {
         state.pl.register(NetFD::Listener(&mut *self.listener), current_task(), mio::Interest::READABLE);
     }
     

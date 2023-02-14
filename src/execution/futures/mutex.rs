@@ -1,6 +1,6 @@
 
 use std::{sync::{atomic::*, Mutex}, collections::VecDeque, future::Future, pin::Pin, ops::DerefMut, cell::UnsafeCell};
-use crate::execution::{task::{SharedTask, current_task}, state::execute::current_state};
+use crate::execution::{task::{SharedTask, current_task}, state::taskqueue::current_state};
 use std::ops::Deref;
 
 pub struct AsyncMutex<T> {
@@ -108,8 +108,10 @@ impl<'a> Future for LockFuture<'a> {
             let task = current_task();
             let mut task_list = self.mutex_ref.suspended.lock().unwrap();
             task_list.push_front(task);
+            println!("pending");
             std::task::Poll::Pending
         } else {
+            println!("ready");
             std::task::Poll::Ready(())
         }
     }
