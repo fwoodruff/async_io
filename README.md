@@ -42,7 +42,7 @@ fn async_spawn(f: impl Future<Output = ()> + Send + 'static) -> JoinFuture
 impl Future for JoinFuture
 impl Drop for JoinFuture // detach
 
-// sage - main.rs
+// Usage - main.rs
 async fn async_main() {
     // async user code
 }
