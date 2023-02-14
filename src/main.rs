@@ -1,6 +1,7 @@
 
 mod execution;
 use execution::futures::mpsc::async_channel;
+use crate::execution::futures::ring_buffer::RingBuffer;
 
 use crate::execution::{
     futures::{
@@ -46,18 +47,22 @@ async fn client(stream : Stream, mutex : Arc<AsyncMutex<usize>>, ) {
 }
 
 async fn async_main() {
-    let ip = fs::read_to_string("src/config.txt").expect("Unable to read address");
-    let mut listener = Listener::bind(&ip).expect("Couldn't bind to port");
+    
 
+    // Kitchen sink
     let mx : Arc<AsyncMutex<usize>> = Arc::new(AsyncMutex::new(0));
-
     let (sdr, rvr) = async_channel();
-
     let _ = sdr.send(4);
     let _ = sdr.send(4);
     let _ = rvr.receive().await;
     let _ = rvr.try_receive();
+    let aa = RingBuffer::new(10);
+    aa.send(4).await;
+    let _ = aa.recv().await;
 
+    // TCP event loop
+    let ip = fs::read_to_string("src/config.txt").expect("Unable to read address");
+    let mut listener = Listener::bind(&ip).expect("Couldn't bind to port");
     while let Ok(stream) = listener.accept().await {
         async_spawn(
             client(stream, mx.clone())

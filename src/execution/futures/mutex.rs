@@ -8,8 +8,7 @@ pub struct AsyncMutex<T> {
     data : UnsafeCell<T>,
 }
 
-
-impl<'a, T> AsyncMutex<T> {
+impl< T> AsyncMutex<T> {
     pub fn new(value : T) -> Self {
         Self {
             lock : AsyncMutexInternal::new(),
@@ -17,7 +16,7 @@ impl<'a, T> AsyncMutex<T> {
         }
     }
 
-    pub async fn lock(&'a self) -> AsyncGuard<'a, T> {
+    pub async fn lock(&self) -> AsyncGuard<'_, T> {
         let fut = self.lock.lock_internal();
         fut.await;
         AsyncGuard::new(self)
@@ -27,14 +26,14 @@ impl<'a, T> AsyncMutex<T> {
 unsafe impl<T: Send> Send for AsyncMutex<T> { }
 unsafe impl<T: Sync> Sync for AsyncMutex<T> { }
 
-unsafe impl<'a, T: Sync> Sync for AsyncGuard<'a, T> { }
-
+unsafe impl<T: Sync> Sync for AsyncGuard<'_, T> { }
+unsafe impl<T: Send> Send for AsyncGuard<'_, T> { }
 
 pub struct AsyncGuard<'a, T : 'a> {
     data_ref : &'a AsyncMutex<T>,
 }
 
-impl<'a ,T> AsyncGuard<'a, T> {
+impl<'a, T : 'a> AsyncGuard<'a, T> {
     fn new(data_ref : &'a AsyncMutex<T>) -> Self {
         Self {
             data_ref,
@@ -42,20 +41,20 @@ impl<'a ,T> AsyncGuard<'a, T> {
     }
 }
 
-impl<'a, T : 'a> Drop for AsyncGuard<'a, T> {
+impl<T> Drop for AsyncGuard<'_, T> {
     fn drop(&mut self) {
         self.data_ref.lock.unlock_internal();
     }
 }
 
-impl<'a, T> Deref for AsyncGuard<'a, T> {
+impl<T> Deref for AsyncGuard<'_, T> {
     type Target = T;
     fn deref(&self) -> &T {
         unsafe { &*self.data_ref.data.get() }
     }
 }
 
-impl<'a, T> DerefMut for AsyncGuard<'a, T> {
+impl<T> DerefMut for AsyncGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut T {
         unsafe { &mut *self.data_ref.data.get() }
     }
@@ -75,8 +74,8 @@ impl AsyncMutexInternal {
         }
     }
 
-    fn lock_internal<'a>(&'a self) -> LockFuture<'a> {
-        LockFuture { mutex_ref : self  }
+    fn lock_internal(&self) -> LockFuture {
+        LockFuture { mutex_ref : self }
     }
 
     fn unlock_internal(&self) {
@@ -97,10 +96,10 @@ struct LockFuture<'a> {
     mutex_ref : &'a AsyncMutexInternal,
 }
 
-unsafe impl<'a> Send for LockFuture<'a> { }
+unsafe impl Send for LockFuture<'_> { }
 
 
-impl<'a> Future for LockFuture<'a> {
+impl Future for LockFuture<'_> {
     type Output = ();
     fn poll(self: Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
         let old = self.mutex_ref.atom.swap(true, Ordering::SeqCst);

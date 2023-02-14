@@ -30,7 +30,7 @@ pub struct AsyncReceiver<T> {
     shared_receiver : Arc<ReceiverImpl<T>>,
 }
 
-impl<'a, T> AsyncReceiver<T> {
+impl<T> AsyncReceiver<T> {
     fn new(shared_receiver : Arc<ReceiverImpl<T>>) -> Self {
         Self {
             shared_receiver,
@@ -41,7 +41,7 @@ impl<'a, T> AsyncReceiver<T> {
         self.shared_receiver.receiver.try_recv()
     }
 
-    pub fn receive(&'a self) -> AsyncReceiverFuture<'a, T> {
+    pub fn receive(& self) -> AsyncReceiverFuture<'_, T> {
         AsyncReceiverFuture::new(self)
     }
 }
@@ -58,7 +58,7 @@ impl<'a, T> AsyncReceiverFuture<'a, T> {
     }
 }
 
-impl<'a, T> Future for AsyncReceiverFuture<'a, T> {
+impl< T> Future for AsyncReceiverFuture<'_, T> {
     type Output = Result<T, RecvError>;
 
     fn poll(self: std::pin::Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {

@@ -26,7 +26,7 @@ struct RegisteredTask {
     descriptor : NetFD,
 }
 
-impl<'a> RegisteredTask {
+impl RegisteredTask {
     fn new(task: SharedTask, descriptor : NetFD) -> Self {
         Self {
             task,
@@ -45,7 +45,7 @@ struct SharedPoller {
     // poll never reads from a pipe, and will always unblock the poll if a registration is attempted
 }
 
-impl<'a> SharedPoller {
+impl SharedPoller {
     // Tasks that need to wait on network IO register themselves with a SharedPoller object
     // Polling yields tasks that can commence with their IO operations
     pub(super)

@@ -35,7 +35,7 @@ impl PendingTasks {
 
 // for the current task running, retrieve the executor it is running on
 pub(in super::super)
-unsafe fn current_state<'a>() -> &'a mut State {
+unsafe fn current_state() -> &'static mut State {
     let current_task = CURRENT.with(|x| { x.borrow().as_ref().unwrap().upgrade().unwrap()});
     let v = current_task.b.lock().unwrap();
     let res = v.producer as *mut State;

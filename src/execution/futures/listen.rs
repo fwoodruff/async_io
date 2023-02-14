@@ -9,13 +9,13 @@ pub struct Listener {
     listener : mio::net::TcpListener,
 }
 
-impl<'a> Listener {
+impl Listener {
     pub fn bind(address : &str) -> std::io::Result<Self> {
         let listener = mio::net::TcpListener::bind(address.parse().expect("Couldn't read the address"))?;
         Ok(Listener { listener } )
     }
 
-    pub fn accept(&'a mut self) -> AcceptFuture<'a> {
+    pub fn accept(&mut self) -> AcceptFuture {
         AcceptFuture::new(&mut self.listener)
     }
 }
@@ -25,6 +25,7 @@ pub struct Stream {
 }
 
 unsafe impl Sync for Stream {} // future should never be polled by more than one thread
+unsafe impl Send for Stream {} // future should never be polled by more than one thread
 
 impl<'a> Stream {
     pub(super) fn new(stream : TcpStream) -> Self {
@@ -41,7 +42,7 @@ impl<'a> Stream {
         WriteFuture::new(buffer, &self.stream)
     }
 
-    pub async fn write_all(&'a self, buffer : &'a [u8]) -> Result<usize, std::io::Error> {
+    pub async fn write_all(&self, buffer : &[u8]) -> Result<usize, std::io::Error> {
         let mut byte_index = 0;
         while byte_index < buffer.len() {
             let write_result = self.write(&buffer[byte_index..]).await;
