@@ -14,7 +14,7 @@ pub struct JoinFuture {
 }
 
 impl JoinFuture {
-    pub(in crate::execution) fn new(child : TaskID) -> Self {
+    pub(crate) fn new(child : TaskID) -> Self {
         Self {
             child,
         }

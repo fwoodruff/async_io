@@ -10,23 +10,23 @@ use super::blockingstate::State;
 // the queue of tasks that can resume
 #[derive(Default)]
 pub struct PendingTasks {
-    pub to_poll : Mutex<VecDeque<SharedTask>>,
+    pub(super) to_poll : Mutex<VecDeque<SharedTask>>,
 }
 
 impl PendingTasks {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Default::default()
     }
 
     // try take a task
-    pub
+    pub(super)
     fn pop(&self) -> Option<SharedTask> {
         let mut guard = self.to_poll.lock().unwrap();
         guard.pop_front()
     }
     
     // try add a task
-    pub fn push(&self, task : SharedTask) {
+    pub(super) fn push(&self, task : SharedTask) {
         let mut guard = self.to_poll.lock().unwrap();
         guard.push_back(task);
     }

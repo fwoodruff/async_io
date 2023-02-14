@@ -8,20 +8,17 @@ use pin_weak::sync::*;
 
 
 type ExecutorFuture = Pin<Box<dyn Future<Output = ()> + Send + 'static>>;
-pub(super)
-type SharedTask = Pin<Arc<Task>>;
+pub(super) type SharedTask = Pin<Arc<Task>>;
 type WeakTask = PinWeak<Task>;
 
-pub const NUMTHREADS : usize = 2;
-pub const PIPE_TOKEN : usize = 0;
-
-pub(super)
-type TaskID = usize;
+pub(crate) const NUMTHREADS : usize = 2;
+pub(crate) const PIPE_TOKEN : usize = 0;
+pub(super) type TaskID = usize;
 
 
-pub struct TaskBookkeeping {
-    pub parent: Option<SharedTask>, // Arc synchronisation necessary
-    pub children: Vec<TaskID>,
+pub(crate) struct TaskBookkeeping {
+    pub(crate) parent: Option<SharedTask>, // Arc synchronisation necessary
+    pub(crate) children: Vec<TaskID>,
     // When an async function spawns a child task, the child needs to determine its parent task
     // Async functions don't offer access to the running task directly. Passing the current task as an
     // argument would infect every user-provided async function.
@@ -29,12 +26,12 @@ pub struct TaskBookkeeping {
     // which is longer than the lifetime of the executor. Tasks have a lifetime shorter than an
     // executor.  Hence, the state must be accessed via a pointer not a reference.
     // State lives on the stack so reference-counting is not desirable.
-    pub producer : *const State,
+    pub(crate) producer : *const State,
 }
 
-pub struct Task {
-    pub future: RefCell<ExecutorFuture>,
-    pub b : Mutex<TaskBookkeeping>,
+pub(crate) struct Task {
+    pub(crate) future: RefCell<ExecutorFuture>,
+    pub(crate) b : Mutex<TaskBookkeeping>,
 }
 
 // Task objects execute Futures and contain bookkeeping to facilitate spawning and joining other tasks
@@ -53,7 +50,7 @@ impl Task {
     }
 
     // SharedTask objects are pinned so the inner pointer can be used as a unique identifier
-    pub
+    pub(super)
     fn task_id(self : &SharedTask) -> TaskID {
         let lhs = Arc::into_raw(Pin::into_inner(self.clone()));
         lhs as TaskID

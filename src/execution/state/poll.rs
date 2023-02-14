@@ -13,10 +13,7 @@ use super::super::PIPE_TOKEN;
 use crate::execution::SharedTask;
 use std::thread;
 
-
-
-
-pub enum NetFD {
+pub(crate) enum NetFD {
     Listener(*mut mio::net::TcpListener),
     Stream(*mut mio::net::TcpStream),
 }
@@ -35,7 +32,7 @@ impl RegisteredTask {
     }
 }
 
-pub
+pub(crate)
 struct SharedPoller {
     read_socket : Mutex<RefCell<mio::net::UnixStream>>,
     write_socket : Mutex<mio::net::UnixStream>,
@@ -88,7 +85,6 @@ impl SharedPoller {
             }
             return res.unwrap();
         }
-        
     }
     
     // Register a task which can be woken up when network IO completes

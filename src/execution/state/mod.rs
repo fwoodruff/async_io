@@ -1,3 +1,3 @@
-pub mod poll;
-pub mod taskqueue;
-pub mod blockingstate;
+pub(in crate::execution) mod poll;
+pub(in crate::execution) mod taskqueue;
+pub(in crate::execution) mod blockingstate;

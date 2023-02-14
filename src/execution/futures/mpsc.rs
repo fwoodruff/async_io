@@ -41,7 +41,7 @@ impl<T> AsyncReceiver<T> {
         self.shared_receiver.receiver.try_recv()
     }
 
-    pub fn receive(& self) -> AsyncReceiverFuture<'_, T> {
+    pub fn receive(&self) -> AsyncReceiverFuture<'_, T> {
         AsyncReceiverFuture::new(self)
     }
 }
@@ -116,9 +116,6 @@ impl<T> AsyncSender<T> {
         res
     }
 }
-
-
-
 
 
 pub fn async_channel<T>() -> (AsyncSender<T>, AsyncReceiver<T>) {

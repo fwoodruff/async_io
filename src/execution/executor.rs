@@ -84,8 +84,7 @@ impl Executor {
     }
 
     // Start the thread pool and set the user code running
-    pub(super)
-    fn run_main(self : Pin<&Self>) {
+    pub(super) fn run_main(self : Pin<&Self>) {
         let mut threads : Vec<std::thread::JoinHandle<()>> = Vec::new();
         for _ in 0..NUMTHREADS {
             self.push_one(&mut threads);

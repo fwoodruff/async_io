@@ -14,7 +14,7 @@ pub struct AcceptFuture<'a> {
 }
 
 impl<'a> AcceptFuture<'a> {
-    pub(in crate::execution::futures) fn new(listener : &'a mut TcpListener) -> Self {
+    pub(crate) fn new(listener : &'a mut TcpListener) -> Self {
         Self {
             listener,
         }

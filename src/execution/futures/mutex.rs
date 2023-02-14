@@ -8,7 +8,7 @@ pub struct AsyncMutex<T> {
     data : UnsafeCell<T>,
 }
 
-impl< T> AsyncMutex<T> {
+impl<'a, T> AsyncMutex<T> {
     pub fn new(value : T) -> Self {
         Self {
             lock : AsyncMutexInternal::new(),
@@ -16,7 +16,7 @@ impl< T> AsyncMutex<T> {
         }
     }
 
-    pub async fn lock(&self) -> AsyncGuard<'_, T> {
+    pub async fn lock(&'a self) -> AsyncGuard<'a, T> {
         let fut = self.lock.lock_internal();
         fut.await;
         AsyncGuard::new(self)
