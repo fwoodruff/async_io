@@ -11,38 +11,38 @@ As an exposition, in the main.rs file, I am running a simple HTTP server on this
 The public interface is as follows:
 ```rust
 // TCP
-fn connect(addr: &SocketAddr) -> Result<TcpStream, Error> 
-fn Listener::bind(address : &str) -> Result<Self> 
-async fn Listener::accept(&mut self) -> Result<Stream, Error> 
-async fn Stream::read(&'a self, buffer : &'a mut [u8] ) -> Result<usize, Error>
-async fn Stream::write(&'a self, buffer : &'a [u8]) -> Result<usize, Error>
-async fn Stream::write_all(&'a self, buffer : &'a [u8]) -> Result<(), Error>
+fn connect(addr: &SocketAddr) -> Result<TcpStream, Error>;
+fn Listener::bind(address : &str) -> Result<Self>;
+async fn Listener::accept(&mut self) -> Result<Stream, Error>;
+async fn Stream::read(&'a self, buffer : &'a mut [u8] ) -> Result<usize, Error>;
+async fn Stream::write(&'a self, buffer : &'a [u8]) -> Result<usize, Error>;
+async fn Stream::write_all(&'a self, buffer : &'a [u8]) -> Result<(), Error>;
 
-// unbounded channel
-fn AsyncReceiver::try_receive<T>(&self) -> Result<T, TryRecvError>
-async fn AsyncReceiver::receive<T>(&self) -> Result<T, RecvError>
-async fn AsyncSender::send<T>(&self, value : T) -> Result<(), SendError<T>>
-fn async_channel<T>() -> (AsyncSender<T>, AsyncReceiver<T>)
+// Unbounded channels
+fn AsyncReceiver::try_receive<T>(&self) -> Result<T, TryRecvError>;
+async fn AsyncReceiver::receive<T>(&self) -> Result<T, RecvError>;
+async fn AsyncSender::send<T>(&self, value : T) -> Result<(), SendError<T>>;
+fn async_channel<T>() -> (AsyncSender<T>, AsyncReceiver<T>);
 
-// locking
-fn AsyncMutex::new<T>(value : T) -> Self
-pub async fn lock(&'a self) -> AsyncGuard<'a, T>
-AsyncGuard::deref<T>(&self) -> &T
-impl<T> Deref for AsyncGuard<'_, T>
-impl<T> DerefMut for AsyncGuard<'_, T>
+// Locking
+fn AsyncMutex::new<T>(value : T) -> Self;
+pub async fn lock(&'a self) -> AsyncGuard<'a, T>;
+AsyncGuard::deref<T>(&self) -> &T;
+impl<T> Deref for AsyncGuard<'_, T>;
+impl<T> DerefMut for AsyncGuard<'_, T>;
 
-// ring buffer
-fn RingBuffer::new<T>(bound : usize) -> Self 
-async fn RingBuffer::send(&self, value : T)
-async fn RingBuffer::recv(&self) -> T
+// Ring buffer
+fn RingBuffer::new<T>(bound : usize) -> Self ;
+async fn RingBuffer::send(&self, value : T);
+async fn RingBuffer::recv(&self) -> T;
 
-// execution
-fn runtime(main_task: impl Future<Output = ()> + Send + 'static)
-fn async_spawn(f: impl Future<Output = ()> + Send + 'static) -> JoinFuture
-impl Future for JoinFuture
-impl Drop for JoinFuture // detach
+// Execution
+fn runtime(main_task: impl Future<Output = ()> + Send + 'static);
+fn async_spawn(f: impl Future<Output = ()> + Send + 'static) -> JoinFuture;
+impl Future for JoinFuture;
+impl Drop for JoinFuture; // detach
 
-// usage - main.rs
+// Usage - main.rs
 async fn async_main() {
     // async user code
 }
