@@ -25,11 +25,11 @@ async fn AsyncSender::send<T>(&self, value : T) -> Result<(), SendError<T>>;
 fn async_channel<T>() -> (AsyncSender<T>, AsyncReceiver<T>);
 
 // Locking
-fn AsyncMutex::new<T>(value : T) -> Self;
-pub async fn lock(&'a self) -> AsyncGuard<'a, T>;
-AsyncGuard::deref<T>(&self) -> &T;
-impl<T> Deref for AsyncGuard<'_, T>;
-impl<T> DerefMut for AsyncGuard<'_, T>;
+fn AsyncMutex::new<T>(value : T) -> Self {}
+pub async fn lock(&'a self) -> AsyncGuard<'a, T> {}
+AsyncGuard::deref<T>(&self) -> &T {}
+impl<T> Deref for AsyncGuard<'_, T> {}
+impl<T> DerefMut for AsyncGuard<'_, T> {}
 
 // Ring buffer
 fn RingBuffer::new<T>(bound : usize) -> Self ;
