@@ -1,6 +1,6 @@
 
 use std::{
-    sync::Mutex,
+    sync::{Mutex, MutexGuard},
     cell::RefCell,
     collections::HashMap,
     io::{
@@ -13,7 +13,10 @@ use super::super::PIPE_TOKEN;
 use crate::execution::SharedTask;
 use std::thread;
 
+
 pub(crate) enum NetFD {
+    // Raw pointers because tasks may temporarily live in thread local memory so
+    // hard to prove lifetimes are bounded at compile time
     Listener(*mut mio::net::TcpListener),
     Stream(*mut mio::net::TcpStream),
 }
@@ -67,23 +70,22 @@ impl SharedPoller {
 
     // If a poller is blocked on polling, we need to unblock so we can update with new tasks
     // otherwise we're just locking a mutex
-    fn force_lock(&self) -> std::sync::MutexGuard<mio::Poll> {
+    fn force_lock(&self) -> MutexGuard<mio::Poll> {
         loop {
             let mut buff = [0u8; 1];
-            while self.write_socket.lock().unwrap().write(&buff[..]).expect("failed to write byte to pipe") != 1 {
-                eprintln!("reloop");
-            }
-            let res = self.locked_poller.try_lock();
-            let mut rr = self.read_socket.lock().unwrap();
-            let bb = rr.get_mut();
-            while  bb.read(&mut buff[..]).unwrap() != 1 {
-                eprintln!("reloop");
-            }
-            if res.is_err() {
+            while self.write_socket.lock().unwrap().write(&buff[..]).is_ok() {}
+
+            let poller_guard = self.locked_poller.try_lock();
+            let mut read_sock_cell = self.read_socket.lock().unwrap();
+            let read_sock = read_sock_cell.get_mut();
+
+            while read_sock.read(&mut buff[..]).is_ok() {}
+            
+            if poller_guard.is_err() {
                 thread::yield_now();
                 continue;
             }
-            return res.unwrap();
+            return poller_guard.unwrap();
         }
     }
     

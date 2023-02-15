@@ -2,15 +2,16 @@
 use super::{*, write::WriteFuture};
 use self::read::*;
 use mio::net::TcpStream;
-use std::cell::RefCell;
+use std::{cell::RefCell, io};
 use crate::execution::accept::AcceptFuture;
+use std::io::Error;
 
 pub struct Listener {
     listener : mio::net::TcpListener,
 }
 
 impl Listener {
-    pub fn bind(address : &str) -> std::io::Result<Self> {
+    pub fn bind(address : &str) -> io::Result<Self> {
         let listener = mio::net::TcpListener::bind(address.parse().expect("Couldn't read the address"))?;
         Ok(Listener { listener } )
     }
@@ -42,7 +43,7 @@ impl<'a> Stream {
         WriteFuture::new(buffer, &self.stream)
     }
 
-    pub async fn write_all(&self, buffer : &[u8]) -> Result<(), std::io::Error> {
+    pub async fn write_all(&'a self, buffer : &'a [u8]) -> Result<(), Error> {
         let mut byte_index = 0;
         while byte_index < buffer.len() {
             let write_result = self.write(&buffer[byte_index..]).await;

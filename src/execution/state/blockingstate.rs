@@ -6,13 +6,13 @@ use super:: {
     poll::SharedPoller,
 };
 
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{atomic::{AtomicUsize, Ordering}, Condvar};
 
 // The internal state for the Executor. It includes tasks that can be run, and tasks that are waiting for network IO
 pub(crate)
 struct State {
     cx : PendingTasks,
-    cv : std::sync::Condvar,
+    cv : Condvar,
     pub(crate) pl : SharedPoller,
     num_tasks : AtomicUsize,
 }
@@ -40,7 +40,7 @@ impl State {
     // If a parent task is waiting for this task, we must resume the parent task.
     pub(crate)
     fn join(&self, task : SharedTask) {
-        self.num_tasks.fetch_sub(1, std::sync::atomic::Ordering::Acquire);
+        self.num_tasks.fetch_sub(1, Ordering::Acquire);
         let mut book = task.b.lock().unwrap();
         
         let mut parent_waiting = false;

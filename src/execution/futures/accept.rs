@@ -1,5 +1,8 @@
 use mio::net::TcpListener;
 use std::future::Future;
+use std::io::ErrorKind;
+use std::io::Error;
+use std::task::Poll;
 use crate::Stream;
 use crate::execution::state::poll::NetFD;
 use crate::execution::state::taskqueue::current_state;
@@ -27,7 +30,7 @@ impl<'a> AcceptFuture<'a> {
 }
 
 impl Future for AcceptFuture<'_> {
-    type Output = Result<Stream, std::io::Error>;
+    type Output = Result<Stream, Error>;
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> std::task::Poll<Self::Output> {
         // executors must live longer than their tasks
         let state = unsafe { current_state() } ;
@@ -35,19 +38,19 @@ impl Future for AcceptFuture<'_> {
             let tcp_stream = self.listener.accept();
             match tcp_stream {
                 Ok(stream) => {
-                    return std::task::Poll::Ready(Ok(Stream::new(stream.0)));
+                    return Poll::Ready(Ok(Stream::new(stream.0)));
                 }
                 Err(error) => {
                     match error.kind() {
-                        std::io::ErrorKind::WouldBlock => {
+                        ErrorKind::WouldBlock => {
                             self.register(state);
-                            return std::task::Poll::Pending;
+                            return Poll::Pending;
                         }
-                        std::io::ErrorKind::Interrupted => {
+                        ErrorKind::Interrupted => {
                             continue;
                         }
                         _ => {
-                            return std::task::Poll::Ready(Err(error));
+                            return Poll::Ready(Err(error));
                         }
                     }
                 }

@@ -1,11 +1,11 @@
 
-use super::super::*;
-use crate::execution::state::{taskqueue::current_state, poll::NetFD};
+use std::{task::{Poll, Context}, io::{ErrorKind, Read}, cell::RefCell, pin::Pin, future::Future};
+use mio::net::TcpStream;
+use crate::execution::{state::{taskqueue::current_state, poll::NetFD}, task::current_task};
 
 pub struct ReadFuture<'a> {
     buff : &'a mut [u8],
     stream : &'a RefCell<TcpStream>,
-
 }
 unsafe impl Send for ReadFuture<'_> {} // future has a single owner when dropped or polled
 
@@ -21,7 +21,7 @@ impl<'a> ReadFuture<'a> {
 impl Future for ReadFuture<'_> {
     type Output = Result<usize, std::io::Error>;
     // polling context is happy for us to try reading from the socket
-    fn poll(mut self: Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+    fn poll(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
         loop {
             let mut stream_borrow = self.stream.borrow_mut();
             let stream_ref = stream_borrow.by_ref();
@@ -31,21 +31,19 @@ impl Future for ReadFuture<'_> {
             
             match res {
                 Ok(_) => {
-                    
-                    return std::task::Poll::Ready(res);
+                    return Poll::Ready(res);
                 }
                 Err(ref error) => {
                     match error.kind() {
-                        
-                        std::io::ErrorKind::WouldBlock => {
+                        ErrorKind::WouldBlock => {
                             state.pl.register(NetFD::Stream(stream_ref), current_task(), mio::Interest::READABLE);
-                            return std::task::Poll::Pending;
+                            return Poll::Pending;
                         }
-                        std::io::ErrorKind::Interrupted => {
+                        ErrorKind::Interrupted => {
                             continue;
                         }
                         _ => {
-                            return std::task::Poll::Ready(res);
+                            return Poll::Ready(res);
                         }
                     }
                 }

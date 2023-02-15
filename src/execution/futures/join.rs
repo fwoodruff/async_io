@@ -3,6 +3,7 @@
 use crate::execution::task::current_task;
 use crate::execution::task::TaskID;
 
+use std::task::Poll;
 use std::{
     task::Context,
     pin::Pin,
@@ -33,9 +34,9 @@ impl Future for JoinFuture {
             future_child != *book_child
         });
         if len == current_book.children.len() {
-            std::task::Poll::Ready(())
+            Poll::Ready(())
         } else {
-            std::task::Poll::Pending
+            Poll::Pending
         }
     }
 }

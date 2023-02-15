@@ -36,7 +36,6 @@ impl Executor {
     // future awaits a child future that returns ready, the parent
     // future does not then need to suspend, and this function is *not* called.
     fn poll_task(self : Pin<&Self>, some_task : SharedTask) {
-        println!("poll task");
         let wk = PinWeak::downgrade(some_task.clone());
         CURRENT.with(|x| { x.replace(Some(wk)); });
         let mut fut = some_task.future.borrow_mut();

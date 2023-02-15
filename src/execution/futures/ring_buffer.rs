@@ -1,4 +1,4 @@
-use std::{sync::atomic::{AtomicUsize, Ordering}, future::Future, cell::RefCell};
+use std::{sync::atomic::{AtomicUsize, Ordering}, future::Future, cell::RefCell, task::Context, pin::Pin};
 
 use std::task::Poll;
 
@@ -51,7 +51,7 @@ impl<'a, T> RingSendFuture<'a, T> {
 impl<T> Future for RingSendFuture<'_, T> {
     type Output = ();
 
-    fn poll(self: std::pin::Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
         let elements = &self.buffer.num_elems;
         let mut elems = elements.load(Ordering::Acquire);
 
@@ -85,7 +85,7 @@ impl<'a, T : 'a> RingRecvFuture<'a, T> {
 impl<T> Future for RingRecvFuture<'_, T> {
     type Output = T;
 
-    fn poll(self: std::pin::Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
         let elements = &self.buffer.num_elems;
         let mut elems = elements.load(Ordering::Acquire);
         while elems > 0 {

@@ -1,5 +1,5 @@
 use std::{  task::{Poll, Context}, sync::{mpsc::{self, *}, 
-            Arc, atomic::{Ordering, AtomicBool}}, future::Future, cell::RefCell};
+            Arc, atomic::{Ordering, AtomicBool}}, future::Future, cell::RefCell, pin::Pin};
 
 use crate::execution::{task::{SharedTask, current_task}, state::taskqueue::current_state};
 
@@ -61,7 +61,7 @@ impl<'a, T> AsyncReceiverFuture<'a, T> {
 impl< T> Future for AsyncReceiverFuture<'_, T> {
     type Output = Result<T, RecvError>;
 
-    fn poll(self: std::pin::Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
         let result = self.receiver.shared_receiver.receiver.try_recv();
         match result {
             Ok(res) => {

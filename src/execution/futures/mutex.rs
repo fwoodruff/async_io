@@ -1,5 +1,5 @@
 
-use std::{sync::{atomic::*, Mutex}, collections::VecDeque, future::Future, pin::Pin, ops::DerefMut, cell::UnsafeCell};
+use std::{sync::{atomic::*, Mutex}, collections::VecDeque, future::Future, pin::Pin, ops::DerefMut, cell::UnsafeCell, task::{Context, Poll}};
 use crate::execution::{task::{SharedTask, current_task}, state::taskqueue::current_state};
 use std::ops::Deref;
 
@@ -101,17 +101,15 @@ unsafe impl Send for LockFuture<'_> { }
 
 impl Future for LockFuture<'_> {
     type Output = ();
-    fn poll(self: Pin<&mut Self>, _cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
         let old = self.mutex_ref.atom.swap(true, Ordering::SeqCst);
         if old {
             let task = current_task();
             let mut task_list = self.mutex_ref.suspended.lock().unwrap();
             task_list.push_front(task);
-            println!("pending");
-            std::task::Poll::Pending
+            Poll::Pending
         } else {
-            println!("ready");
-            std::task::Poll::Ready(())
+            Poll::Ready(())
         }
     }
 }
