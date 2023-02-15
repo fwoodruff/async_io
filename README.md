@@ -11,7 +11,7 @@ As an exposition, in the main.rs file, I am running a simple HTTP server on this
 The public interface is as follows:
 ```rust
 // TCP
-fn connect(addr: &SocketAddr) -> Result<TcpStream, Error>
+fn connect(addr: &SocketAddr) -> Result<Stream, Error>
 fn Listener::bind(address : &str) -> Result<Self>
 async fn Listener::accept(&mut self) -> Result<Stream, Error>
 async fn Stream::read(&'a self, buffer : &'a mut [u8] ) -> Result<usize, Error>
