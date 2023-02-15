@@ -1,16 +1,10 @@
 
-mod execution;
-use execution::futures::mpsc::async_channel;
-use crate::execution::futures::ring_buffer::RingBuffer;
 
-use crate::execution::{
-    futures::{
-        listen::{
-            Listener, Stream}, 
-            mutex::AsyncMutex}, 
-            async_spawn
-};
-use std::{fs, sync::Arc};
+mod execution;
+use std::{sync::Arc, fs};
+
+use execution::{futures::{mpsc::async_channel, listen::{Stream, Listener}, mutex::AsyncMutex}, async_spawn};
+use crate::execution::futures::ring_buffer::RingBuffer;
 
 async fn client(stream : Stream, mutex : Arc<AsyncMutex<usize>>, ) {
     let mut buffer = [0u8; 1024];
@@ -46,6 +40,7 @@ async fn client(stream : Stream, mutex : Arc<AsyncMutex<usize>>, ) {
     stream.write_all(response).await.unwrap();
 }
 
+
 async fn async_main() {
     // Kitchen sink
     let mx : Arc<AsyncMutex<usize>> = Arc::new(AsyncMutex::new(0));
@@ -71,3 +66,4 @@ async fn async_main() {
 fn main() {
     execution::runtime(async_main());
 }
+

@@ -3,7 +3,6 @@ use std::future::Future;
 use std::io::ErrorKind;
 use std::io::Error;
 use std::task::Poll;
-use crate::Stream;
 use crate::execution::state::poll::NetFD;
 use crate::execution::state::taskqueue::current_state;
 use std::pin::Pin;
@@ -11,6 +10,8 @@ use std::task::Context;
 use crate::execution::State;
 
 use crate::execution::current_task;
+
+use super::listen::Stream;
 
 pub struct AcceptFuture<'a> {
     listener : &'a mut TcpListener,

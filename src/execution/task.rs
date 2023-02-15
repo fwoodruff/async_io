@@ -11,7 +11,7 @@ type ExecutorFuture = Pin<Box<dyn Future<Output = ()> + Send + 'static>>;
 pub(super) type SharedTask = Pin<Arc<Task>>;
 type WeakTask = PinWeak<Task>;
 
-pub(crate) const NUMTHREADS : usize = 2;
+pub(crate) const NUMTHREADS : usize = 4;
 pub(crate) const PIPE_TOKEN : usize = 0;
 pub(super) type TaskID = usize;
 
