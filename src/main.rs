@@ -21,7 +21,7 @@ async fn client(stream : Stream, mutex : Arc<AsyncMutex<usize>>, ) {
             for byte in buffer[..bytes_read].iter() {
                 print!("{}", *byte as char);
             }
-            println!("");
+            println!();
         }
         Err(_) => {
             println!("error");
@@ -43,12 +43,10 @@ async fn client(stream : Stream, mutex : Arc<AsyncMutex<usize>>, ) {
     *var += 1;
     println!("client number: {}", *var);
     
-    if let Err(_) = stream.write_all(response).await { }
+    stream.write_all(response).await.unwrap();
 }
 
 async fn async_main() {
-    
-
     // Kitchen sink
     let mx : Arc<AsyncMutex<usize>> = Arc::new(AsyncMutex::new(0));
     let (sdr, rvr) = async_channel();

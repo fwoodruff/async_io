@@ -12,11 +12,10 @@ pub struct RingBuffer<T> {
 unsafe impl<T: Send> Send for RingBuffer<T> { }
 unsafe impl<T: Send> Sync for RingBuffer<T> { }
 
-impl<T : Clone> RingBuffer<T> {
+impl<T> RingBuffer<T> {
     pub fn new(bound : usize) -> Self {
-        
-        let mut buffer : Vec<RefCell<Option<T>>> = vec!();
-        buffer.resize(bound, RefCell::new(None));
+        let mut buffer : Vec<RefCell<Option<T>>> = Vec::with_capacity(bound);
+        buffer.resize_with(5, || RefCell::new(None));
         
         Self {
             buffer,

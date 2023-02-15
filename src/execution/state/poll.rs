@@ -79,7 +79,7 @@ impl SharedPoller {
             while  bb.read(&mut buff[..]).unwrap() != 1 {
                 eprintln!("reloop");
             }
-            if let Err(_) = res {
+            if res.is_err() {
                 thread::yield_now();
                 continue;
             }
@@ -99,8 +99,8 @@ impl SharedPoller {
         let rtask = RegisteredTask::new(task, source);
         let old_value = self.token_map.lock().unwrap().insert(token, rtask);
         
-        if let Some(_value) = old_value {
-            assert!(false);
+        if old_value.is_some() {
+            panic!();
         }
     }
 
@@ -118,7 +118,7 @@ impl SharedPoller {
         let mut events = mio::Events::with_capacity(1024);
         let pollres = local_poll.poll(&mut events, None);
         let mut woken_tasks = vec!();
-        if let Err(_) = pollres {
+        if pollres.is_err() {
             return Some(woken_tasks);
         }
         for event in events.into_iter() {

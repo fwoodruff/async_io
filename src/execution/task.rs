@@ -44,7 +44,7 @@ impl Task {
             b : Mutex::new(TaskBookkeeping { 
                 parent, 
                 children : Vec::new(),
-                producer : producer ,
+                producer,
             })
         }
     }

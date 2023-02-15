@@ -18,8 +18,6 @@ impl<'a> ReadFuture<'a> {
     }
 }
 
-
-
 impl Future for ReadFuture<'_> {
     type Output = Result<usize, std::io::Error>;
     // polling context is happy for us to try reading from the socket

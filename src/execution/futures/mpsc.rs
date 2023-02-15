@@ -65,7 +65,7 @@ impl< T> Future for AsyncReceiverFuture<'_, T> {
         let result = self.receiver.shared_receiver.receiver.try_recv();
         match result {
             Ok(res) => {
-                return Poll::Ready(Ok(res));
+                Poll::Ready(Ok(res))
             }
             Err(_) => {
                 let resumable = & self.receiver.shared_receiver.resumable;
@@ -78,7 +78,7 @@ impl< T> Future for AsyncReceiverFuture<'_, T> {
                     return Poll::Ready(failstate);
                 }
                 self.receiver.shared_receiver.wakeable.store(true, Ordering::Release);
-                return Poll::Pending
+                Poll::Pending
             }
         }
     }
@@ -100,10 +100,7 @@ impl<T> AsyncSender<T> {
     }
 
     pub fn send(&self, value : T) -> Result<(), SendError<T>> {
-        let res = self.sender.send(value);
-        if res.is_err() {
-            return res;
-        }
+        self.sender.send(value)?;
         if self.receiver.wakeable.load(Ordering::Acquire) {
             let can_resume = self.receiver.wakeable.swap(false, Ordering::AcqRel);
             if can_resume {
@@ -113,7 +110,7 @@ impl<T> AsyncSender<T> {
                 state.push(task);
             }
         }
-        res
+        Ok(())
     }
 }
 
