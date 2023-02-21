@@ -1,26 +1,24 @@
 
 
-pub mod state;
-mod task;
-pub mod futures;
-mod executor;
+pub(crate) mod state;
+pub(crate) mod task;
+pub(crate) mod futures;
+pub(crate) mod executor;
+
+use crate::JoinFuture;
 
 use self::state::blockingstate::State;
 use self::executor::Executor;
-use self::futures::{*, join::*};
 use self::task::*;
 
 use std::{
     future::Future,
-    io::Read,
     sync::Arc,
     pin::Pin,
-    cell::RefCell,
 };
-use mio::net::TcpStream;
 
 // Allows users to fork new task from existing async functions
-pub fn async_spawn(f: impl Future<Output = ()> + Send + 'static) -> join::JoinFuture {
+pub(crate) fn async_spawn_impl(f: impl Future<Output = ()> + Send + 'static) -> JoinFuture {
     let current_task = current_task();
     let locking_cx: &State;
     let shared_new_task : SharedTask;
@@ -38,8 +36,8 @@ pub fn async_spawn(f: impl Future<Output = ()> + Send + 'static) -> join::JoinFu
     JoinFuture::new(ptr)
 }
 
-// Entry point for user-provided async main
-pub fn runtime(main_task: impl Future<Output = ()> + Send + 'static) {
+ // Entry point for user-provided async main
+pub(crate) fn runtime_impl(main_task: impl Future<Output = ()> + Send + 'static) {
     let e = Executor::new(main_task);
     Pin::new(&e).run_main();
 }

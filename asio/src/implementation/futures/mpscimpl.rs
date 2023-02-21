@@ -1,13 +1,12 @@
 use std::{  task::{Poll, Context}, sync::{mpsc::{self, *}, 
             Arc, atomic::{Ordering, AtomicBool}}, future::Future, cell::RefCell, pin::Pin};
 
-use crate::execution::{task::{SharedTask, current_task}, state::taskqueue::current_state};
+use crate::{implementation::{task::{SharedTask, current_task}, state::taskqueue::current_state}, mpsc::AsyncReceiver};
 
 // This builds an async mpsc queue over a blocking mpsc queue
 
 
-
-struct ReceiverImpl<T> {
+pub(crate) struct ReceiverImpl<T> {
     receiver : mpsc::Receiver<T>,
     wakeable : AtomicBool,
     resumable : RefCell<Option<SharedTask>>,
@@ -24,10 +23,6 @@ impl<T> ReceiverImpl<T> {
             resumable : RefCell::new(None)
         } 
     }
-}
-
-pub struct AsyncReceiver<T> {
-    shared_receiver : Arc<ReceiverImpl<T>>,
 }
 
 impl<T> AsyncReceiver<T> {
@@ -90,7 +85,6 @@ pub struct AsyncSender<T> {
     receiver : Arc<ReceiverImpl<T>>,
 }
 
-
 impl<T> AsyncSender<T> {
     fn new(sender : mpsc::Sender<T>, receiver : Arc<ReceiverImpl<T>>) -> Self {
         Self {
@@ -115,7 +109,7 @@ impl<T> AsyncSender<T> {
 }
 
 
-pub fn async_channel<T>() -> (AsyncSender<T>, AsyncReceiver<T>) {
+pub(crate) fn async_channel_impl<T>() -> (AsyncSender<T>, AsyncReceiver<T>) {
     let (sender, receiver) = channel();
     let receiver_impl = Arc::new(ReceiverImpl::new(receiver));
     let receiver_clone = receiver_impl.clone();

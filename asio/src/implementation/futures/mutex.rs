@@ -1,12 +1,9 @@
 
 use std::{sync::{atomic::*, Mutex}, collections::VecDeque, future::Future, pin::Pin, ops::DerefMut, cell::UnsafeCell, task::{Context, Poll}};
-use crate::execution::{task::{SharedTask, current_task}, state::taskqueue::current_state};
+use crate::{implementation::{task::{SharedTask, current_task}, state::taskqueue::current_state}, AsyncMutex};
 use std::ops::Deref;
 
-pub struct AsyncMutex<T> {
-    lock : AsyncMutexInternal,
-    data : UnsafeCell<T>,
-}
+
 
 impl<'a, T> AsyncMutex<T> {
     pub fn new(value : T) -> Self {
@@ -60,7 +57,7 @@ impl<T> DerefMut for AsyncGuard<'_, T> {
     }
 }
 
-
+pub(crate)
 struct AsyncMutexInternal {
     atom : AtomicBool,
     suspended : Mutex<VecDeque<SharedTask>>,

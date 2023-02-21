@@ -1,17 +1,18 @@
 use mio::net::TcpListener;
-use std::future::Future;
-use std::io::ErrorKind;
+use std::{io::{self, ErrorKind}, task::{Context, Poll}, pin::Pin, future::Future};
+use crate::{implementation::{ state::{taskqueue::current_state, poll::NetFD, blockingstate::State}, task::current_task}, Listener, Stream};
 use std::io::Error;
-use std::task::Poll;
-use crate::execution::state::poll::NetFD;
-use crate::execution::state::taskqueue::current_state;
-use std::pin::Pin;
-use std::task::Context;
-use crate::execution::State;
 
-use crate::execution::current_task;
+impl Listener {
+    pub fn bind(address : &str) -> io::Result<Self> {
+        let listener = mio::net::TcpListener::bind(address.parse().expect("Couldn't read the address"))?;
+        Ok(Listener { listener } )
+    }
 
-use super::listen::Stream;
+    pub fn accept(&mut self) -> AcceptFuture {
+        AcceptFuture::new(&mut self.listener)
+    }
+}
 
 pub struct AcceptFuture<'a> {
     listener : &'a mut TcpListener,

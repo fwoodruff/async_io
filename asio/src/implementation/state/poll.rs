@@ -10,7 +10,7 @@ use std::{
 };
 use mio::Interest;
 use super::super::PIPE_TOKEN;
-use crate::execution::SharedTask;
+use crate::implementation::SharedTask;
 use std::thread;
 
 
@@ -90,7 +90,7 @@ impl SharedPoller {
     }
     
     // Register a task which can be woken up when network IO completes
-    pub(in crate::execution)
+    pub(in crate::implementation)
     fn register(&self, source : NetFD, task : SharedTask, interests : Interest) {
         let poller = self.force_lock();
         let token = mio::Token(task.task_id());

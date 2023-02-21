@@ -2,12 +2,9 @@ use std::{sync::atomic::{AtomicUsize, Ordering}, future::Future, cell::RefCell, 
 
 use std::task::Poll;
 
-pub struct RingBuffer<T> {
-    buffer : Vec<RefCell<Option<T>>>,
-    num_elems : AtomicUsize,
-    insertion_idx : AtomicUsize,
-    removal_idx : AtomicUsize,
-}
+use crate::RingBuffer;
+
+
 
 unsafe impl<T: Send> Send for RingBuffer<T> { }
 unsafe impl<T: Send> Sync for RingBuffer<T> { }

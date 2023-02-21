@@ -2,14 +2,14 @@ use std::{
     collections::VecDeque,
     sync::Mutex
 };
-use crate::execution::SharedTask;
-use crate::execution::CURRENT;
+use crate::implementation::SharedTask;
+use crate::implementation::CURRENT;
 
 use super::blockingstate::State;
 
 // the queue of tasks that can resume
 #[derive(Default)]
-pub struct PendingTasks {
+pub(crate) struct PendingTasks {
     pub(super) to_poll : Mutex<VecDeque<SharedTask>>,
 }
 
@@ -34,7 +34,7 @@ impl PendingTasks {
 }
 
 // for the current task running, retrieve the executor it is running on
-pub(in super::super)
+pub(crate)
 unsafe fn current_state() -> &'static mut State {
     let current_task = CURRENT.with(|x| { x.borrow().as_ref().unwrap().upgrade().unwrap()});
     let v = current_task.b.lock().unwrap();

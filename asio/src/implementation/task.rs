@@ -8,12 +8,12 @@ use pin_weak::sync::*;
 
 
 type ExecutorFuture = Pin<Box<dyn Future<Output = ()> + Send + 'static>>;
-pub(super) type SharedTask = Pin<Arc<Task>>;
+pub(crate) type SharedTask = Pin<Arc<Task>>;
 type WeakTask = PinWeak<Task>;
 
 pub(crate) const NUMTHREADS : usize = 4;
 pub(crate) const PIPE_TOKEN : usize = 0;
-pub(super) type TaskID = usize;
+pub(crate) type TaskID = usize;
 
 
 pub(crate) struct TaskBookkeeping {
@@ -59,11 +59,11 @@ impl Task {
 }
 
 // Retrieve the currently running task from thread local memory
-pub(super)
+pub(crate)
 fn current_task() -> SharedTask {
     CURRENT.with(|x| { x.borrow().as_ref().unwrap().upgrade()}).unwrap()
 }
 
 thread_local! {
-    pub(super) static CURRENT: RefCell<Option<WeakTask>> = RefCell::new(None);
+    pub(crate) static CURRENT: RefCell<Option<WeakTask>> = RefCell::new(None);
 }

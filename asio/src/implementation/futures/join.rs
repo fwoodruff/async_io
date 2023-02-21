@@ -1,7 +1,8 @@
 
 
-use crate::execution::task::current_task;
-use crate::execution::task::TaskID;
+use crate::JoinFuture;
+use crate::implementation::task::current_task;
+use crate::implementation::task::TaskID;
 
 use std::task::Poll;
 use std::{
@@ -10,9 +11,7 @@ use std::{
     future::Future,
 };
 
-pub struct JoinFuture {
-    child : TaskID
-}
+
 
 impl JoinFuture {
     pub(crate) fn new(child : TaskID) -> Self {
